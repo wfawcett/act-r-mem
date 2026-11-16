@@ -42,6 +42,7 @@ commands:
       - Grep
       - Write
       - Bash(git *)
+      - Bash(gh issue view *)
   Ready:
     command: /ready
     model: sonnet
@@ -53,6 +54,8 @@ commands:
       - Grep
       - Write
       - Bash(git *)
+      - Bash(gh issue view *)
+      - Bash(gh pr view *)
   In progress:
     command: /build
     model: sonnet
@@ -65,7 +68,9 @@ commands:
       - Write
       - Edit
       - Bash(git *)
+      - Bash(gh issue view *)
       - Bash(npm run *)
+      - Bash(npx tsx *)
 poll_seconds: 300
 merge:
   auto: false
