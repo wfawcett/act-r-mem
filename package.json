@@ -1,0 +1,8 @@
+{
+  "name": "act-r-mem",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ACT-R memory models",
+  "scripts": {},
+  "devDependencies": {}
+}
