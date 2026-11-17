@@ -16,3 +16,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm test
+
+  factory-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Board automation scripts must stay parseable; lint covers them via eslint.config.mjs
+      - run: for f in .factory/scripts/*.mjs .factory/scripts/lib/*.mjs; do node --check "$f"; done

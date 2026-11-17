@@ -58,7 +58,8 @@ function blockerInfo(repo, issue) {
     "api", `repos/${repo}/issues/${issue}`,
     "--jq", "[.state, .issue_dependencies_summary.blocked_by] | join(\" \")",
   ]).trim().split(" ");
-  return { state, blocked: Number(blocked) ?? 0 };
+  const count = Number(blocked);
+  return { state, blocked: Number.isFinite(count) ? count : 0 };
 }
 
 // Open issues this issue blocks (its dependents), with their labels.

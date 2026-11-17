@@ -2,6 +2,8 @@
 
 ACT-R memory models. TypeScript implementation of ACT-R declarative memory (activations, base-level learning, spread, retrieval).
 
+Review-time rules: see `CODING_STANDARDS.md` — comments describe actual behavior, no unscoped devDeps in workspaces.
+
 ## Agent skills
 
 ### Issue tracker
