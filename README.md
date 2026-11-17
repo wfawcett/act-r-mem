@@ -1,7 +1,9 @@
-# act-r-mem
+# Recall
 
-ACT-R memory models. TypeScript implementation of ACT-R declarative memory (activations, base-level learning, spread, retrieval).
+Self-hosted ACT-R declarative memory service for AI agents: memories strengthen with use, fade with time, and surface when weak cues converge. Serves Claude Code, Hermes and omp from one store.
 
-## Factory board
+**Spec:** [`docs/recall-prd.md`](docs/recall-prd.md) — the PRD is the source of truth; FR ids in tickets and PRs cite it.
 
-Work runs through the factory pipeline (GitHub Project #6). Stage commands live in `factory.yml` and `.claude/commands/`. Human gates: `Spec Review` and `In review` columns; `BLOCKED` label for machine-caused stops.
+**Layout:** `packages/activation` (pure ACT-R math, PRD §10) · `apps/service` (Fastify + MCP + worker) · `apps/ui` (brain UI) · `db/migrations` · `scenarios` (replay harness) · `integrations/` (per-client glue).
+
+**Build:** this repo is worked by a software factory — tickets on the GitHub board carry FR references; one ticket, one PR.
