@@ -91,7 +91,10 @@ run(() => {
     }
   }
   const fill = (t) => String(t).replaceAll("{{issue}}", a.issue).replaceAll("{{stage}}", a.stage).replaceAll("{{repo}}", repo)
-    .replaceAll("{{title}}", title).replaceAll("{{body}}", body);
+    .replaceAll("{{title}}", title).replaceAll("{{body}}", body)
+    // Code fences in injected text collide with the model's tool-call syntax (observed on
+    // glm-5.3-flash: the worker stops emitting tool calls). De-fence the injected text.
+    .replaceAll("```", "%%%");
   let stageText = fill(cmd.command);
   // For omp a claude-style slash command expands to the command file body: one source of stage instructions.
   if (runner === "omp" && stageText.startsWith("/")) {
