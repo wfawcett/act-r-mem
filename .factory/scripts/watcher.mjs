@@ -136,7 +136,7 @@ function promoteFrontier(config, configPath, list) {
   const target = config.commands?.Ready ? "Ready" : config.stages.find((s) => s !== "Backlog" && config.commands?.[s]?.command);
   if (!target) return;
   for (const card of list) {
-    if (card.stage !== "Backlog" || card.labels.includes("BLOCKED")) continue;
+    if (card.stage !== "Backlog" || card.labels.includes("BLOCKED") || pipelineExempt(card)) continue;
     const { state, blocked } = blockerInfo(board.repo, card.number);
     if (state !== "open" || blocked > 0) continue;
     const moved = script("move.mjs", [String(card.number), target, "--from", "Backlog", "--reason", "frontier: no open blockers"], configPath);
