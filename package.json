@@ -11,8 +11,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "lint": "eslint .",
-    "replay": "pnpm --filter @recall/activation test"
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
