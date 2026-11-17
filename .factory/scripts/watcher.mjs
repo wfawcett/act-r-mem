@@ -190,6 +190,9 @@ const runPhase = (n, stage, wt, configPath) => new Promise((resolve) => {
 });
 
 // One poll. Returns true when the next poll should start at once (run-phase exit 0 or 3).
+// Cards labeled wayfinder:* are decision-map work, not factory worker cards.
+const pipelineExempt = (c) => c.labels.some((l) => l.startsWith("wayfinder:"));
+
 let prevBlocked = new Set(); // card numbers BLOCKED on the previous poll; cascade's input/output.
 async function poll(config, configPath) {
   const list = cards(config);
@@ -201,6 +204,7 @@ async function poll(config, configPath) {
     checkMerges(config, configPath, list);
     card = list.find(
       (c) => config.commands?.[c.stage]?.command && !c.labels.includes("BLOCKED") && !c.labels.includes("REVIEW")
+        && !pipelineExempt(c)
         && openBlockerNumbers(config.board.repo, c.number).length === 0,
     );
   } catch (e) {
