@@ -104,4 +104,4 @@ commands:
       - Bash(gh pr create *)
 poll_seconds: 300
 merge:
-  auto: false
+  auto: true

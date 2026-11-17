@@ -189,11 +189,23 @@ const runPhase = (n, stage, wt, configPath) => new Promise((resolve) => {
 });
 
 // One poll. Returns true when the next poll should start at once (run-phase exit 0 or 3).
+let prevBlocked = new Set(); // card numbers BLOCKED on the previous poll; cascade's input/output.
 async function poll(config, configPath) {
-  checkMerges(config, configPath, cards(config));
-  const card = cards(config).find(
-    (c) => config.commands?.[c.stage]?.command && !c.labels.includes("BLOCKED") && !c.labels.includes("REVIEW"),
-  );
+  const list = cards(config);
+  let card;
+  try {
+    autoMerge(config, list);
+    prevBlocked = cascade(config, configPath, list, prevBlocked);
+    promoteFrontier(config, configPath, list);
+    checkMerges(config, configPath, list);
+    card = list.find(
+      (c) => config.commands?.[c.stage]?.command && !c.labels.includes("BLOCKED") && !c.labels.includes("REVIEW")
+        && openBlockerNumbers(config.board.repo, c.number).length === 0,
+    );
+  } catch (e) {
+    log(`poll failed: ${e.message}`);
+    return false;
+  }
   if (!card) return false;
   const wt = ensureWorktree(configPath, card.number);
   if (stopping) return false;
