@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig, parseArgs, run, UsageError } from "./lib/common.mjs";
+import { render, usage } from "./lib/report.mjs";
 
 const CAP = 2;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,10 @@ run(() => {
   const dir = path.join(path.resolve(a.cwd), ".tmp", "factory", a.issue, slug(a.stage));
   const resultFile = path.join(dir, "result.json");
   const logFile = path.join(dir, "claude.log");
+  const startedAt = new Date().toISOString();
+  // Report cutoff: capture rows up to a moment after the worker exits, so late proxy
+  // writes are not raced. Computed once here, used by postReport.
+  const endedAt = () => new Date(Date.now() + 5_000).toISOString();
   const attemptsFile = path.join(dir, "attempts");
   const reasonFile = path.join(dir, "last-reason");
   fs.mkdirSync(dir, { recursive: true });
@@ -52,6 +57,19 @@ run(() => {
   const fail = () => {
     console.log(`error #${a.issue}: a board action failed in ${a.stage} (see stderr)`);
     process.exit(1);
+  };
+  // Post the build-report comment. Best effort: a reporting failure must never fail the stage.
+  const postReport = (sessionId, outcome, extraLines) => {
+    try {
+      // The worker's contract writes decision-log.md beside result.json (stage defaults, choices).
+      const decisionFile = path.join(dir, "decision-log.md");
+      const decision = fs.existsSync(decisionFile) ? oneLine(fs.readFileSync(decisionFile, "utf8")).slice(0, 400) : undefined;
+      const u = usage({ sessionId, fromIso: startedAt, toIso: endedAt() });
+      const body = render({ stage: a.stage, issue: a.issue, outcome, decision, usage: u, extraLines });
+      spawnSync("gh", ["issue", "comment", a.issue, "--repo", repo, "--body", body], { encoding: "utf8" });
+    } catch (e) {
+      console.error(`factory: report failed (stage continues): ${e.message}`);
+    }
   };
   const blockAtCap = (reason) => {
     const why = `${a.stage} failed ${CAP} times. Last reason: ${oneLine(reason)}. Log: ${logFile}`;
@@ -104,6 +122,7 @@ run(() => {
   }
   const log = fs.openSync(logFile, "w");
   let proc;
+  let ompSessionId = null;
   if (runner === "omp") {
     const contract = fs.readFileSync(path.join(HERE, "..", "agents", "factory-worker.md"), "utf8")
       .replace(/^---\n[\s\S]*?\n---\n/, "").trim();
@@ -114,13 +133,24 @@ run(() => {
     const tools = [...new Set(["read", ...(cmd.allowed_tools ?? []).map((t) => t.startsWith("Bash") ? "bash" : OMP_TOOLS[String(t).toLowerCase()]).filter(Boolean)])].join(",");
     const userMsg = [stageText, "", `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
     const ompArgs = ["-p", userMsg, "--system-prompt", contract, "--model", model,
-      "--max-time", String(maxTime), "--auto-approve", "--no-session",
-      "--no-skills", "--no-rules", "--no-context-files"];
+      "--max-time", String(maxTime), "--auto-approve",
+      "--no-skills", "--no-rules", "--no-context-files",
+      // json mode: first event is {"type":"session","id":...} — the key that ties this
+      // run to its LiteLLM spend rows. stdout is the event stream; it doubles as the log.
+      "--mode", "json"];
     if (tools) ompArgs.push("--tools", tools);
-    proc = spawnSync("omp", ompArgs, { cwd: a.cwd, stdio: ["ignore", log, log] });
+    const jsonLog = path.join(dir, "claude.jsonl");
+    const jsonFd = fs.openSync(jsonLog, "w");
+    proc = spawnSync("omp", ompArgs, { cwd: a.cwd, stdio: ["ignore", jsonFd, log] });
+    fs.closeSync(jsonFd);
     if (process.env.FACTORY_DEBUG) {
       fs.writeFileSync(path.join(dir, "argv.json"), JSON.stringify({ runner, model, ompArgs }, null, 2));
     }
+    // Recover the session id (and keep text logs useful): first line of the event stream.
+    try {
+      const first = fs.readFileSync(jsonLog, "utf8").split("\n").find(Boolean);
+      if (first) ompSessionId = JSON.parse(first).id;
+    } catch { /* report runs without usage numbers instead */ }
   } else {
     const prompt = [`Stage command: ${stageText}`, `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
     proc = spawnSync(
@@ -153,6 +183,8 @@ run(() => {
 
   if (result?.status === "done") {
     const next = config.stages[idx + 1];
+    postReport(ompSessionId, `done — ${a.stage} → ${next}`,
+      [`Session: \`${ompSessionId ?? "n/a"}\``, `Log: \`${logFile}\``].filter(Boolean));
     const status = child("move.mjs", [a.issue, next, "--from", a.stage, "--reason", `${a.stage} phase done`]);
     if (status === 3) {
       console.log(`moved #${a.issue}: a person moved the card during ${a.stage}. Nothing changed.`);
@@ -164,6 +196,8 @@ run(() => {
   }
   if (result?.status === "blocked") {
     const why = `${a.stage} phase blocked. Recommended: ${oneLine(result.recommended ?? "") || "none"}`;
+    postReport(ompSessionId, `blocked — need: ${oneLine(result.need)}`,
+      [`Recommended: ${oneLine(result.recommended ?? "") || "none"}`, `Session: \`${ompSessionId ?? "n/a"}\``, `Log: \`${logFile}\``].filter(Boolean));
     if (child("block.mjs", [a.issue, "--need", oneLine(result.need), "--why", why]) !== 0) fail();
     clearCount();
     return console.log(`blocked #${a.issue}: ${a.stage} phase needs a person`);
@@ -171,6 +205,8 @@ run(() => {
 
   // failed, or any invalid outcome
   const why = result ? oneLine(result.need ?? "") || "worker reported failed" : reason;
+  postReport(ompSessionId, `failed — ${why}`,
+    [`Session: \`${ompSessionId ?? "n/a"}\``, `Log: \`${logFile}\``].filter(Boolean));
   const count = readCount() + 1;
   fs.writeFileSync(attemptsFile, String(count));
   fs.writeFileSync(reasonFile, why);

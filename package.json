@@ -1,8 +1,24 @@
 {
-  "name": "act-r-mem",
+  "name": "recall",
   "version": "0.1.0",
   "private": true,
-  "description": "ACT-R memory models",
-  "scripts": {},
-  "devDependencies": {}
+  "description": "Recall: self-hosted ACT-R declarative memory service (PRD: docs/recall-prd.md)",
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "eslint .",
+    "replay": "pnpm --filter @recall/activation test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.7"
+  }
 }
