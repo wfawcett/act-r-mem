@@ -51,6 +51,98 @@ function cards(config) {
   }));
 }
 
+// Issue state and open-blocker count in one REST call. The count is GitHub's native
+// issue-dependency summary (open blockers only).
+function blockerInfo(repo, issue) {
+  const [state, blocked] = gh([
+    "api", `repos/${repo}/issues/${issue}`,
+    "--jq", "[.state, .issue_dependencies_summary.blocked_by] | join(\" \")",
+  ]).trim().split(" ");
+  return { state, blocked: Number(blocked) ?? 0 };
+}
+
+// Open issues this issue blocks (its dependents), with their labels.
+function openDependents(repo, issue) {
+  try {
+    return JSON.parse(gh([
+      "api", `repos/${repo}/issues/${issue}/dependencies/blocking`,
+      "--jq", '[.[] | select(.state == "open") | {number, labels: [.labels[].name]}]',
+    ]));
+  } catch {
+    return [];
+  }
+}
+
+// Open issues that block this issue (its blockers), as numbers.
+function openBlockerNumbers(repo, issue) {
+  return JSON.parse(gh([
+    "api", `repos/${repo}/issues/${issue}/dependencies/blocked_by`,
+    "--jq", '[.[] | select(.state == "open") | .number]',
+  ]));
+}
+
+// merge.auto: true -> the watcher merges the closing PR of an In review card itself.
+function autoMerge(config, list) {
+  if (!config.merge?.auto) return;
+  const { board } = config;
+  for (const card of list) {
+    if (card.stage !== "In review" || card.labels.includes("BLOCKED")) continue;
+    const prs = JSON.parse(gh(["pr", "list", "--repo", board.repo, "--state", "open", "--search", `${card.number} in:body`, "--json", "number,body"]));
+    const closes = new RegExp(`\\b(closes|fixes|resolves)\\s+#${card.number}\\b`, "i");
+    for (const pr of prs) {
+      if (!closes.test(pr.body ?? "")) continue;
+      const r = spawnSync("gh", ["pr", "merge", String(pr.number), "--repo", board.repo, "--squash"], { encoding: "utf8", env: process.env });
+      log(r.status === 0
+        ? `#${card.number}: auto-merged PR #${pr.number} (merge.auto)`
+        : `#${card.number}: auto-merge of PR #${pr.number} failed: ${(r.stderr ?? "").split("\n")[0]}`);
+    }
+  }
+}
+
+// Cascade BLOCKED to the open dependents of a newly blocked card, and clear it from
+// dependents whose blockers are all clear again. Only cascade-made labels are cleared:
+// the cascade block comment says "need: cascade:", a worker block never does.
+function cascade(config, configPath, list, prev) {
+  const { board } = config;
+  const now = new Set(list.filter((c) => c.labels.includes("BLOCKED")).map((c) => c.number));
+  for (const n of now) {
+    if (prev.has(n)) continue;
+    for (const d of openDependents(board.repo, n)) {
+      if (d.labels.includes("BLOCKED")) continue;
+      script("block.mjs", [String(d.number), "--need", `cascade: blocked by #${n}`, "--why", `#${n} is BLOCKED; this ticket waits for it`], configPath);
+      log(`#${d.number}: cascade BLOCKED (blocker #${n})`);
+    }
+  }
+  for (const n of prev) {
+    if (now.has(n)) continue;
+    for (const d of openDependents(board.repo, n)) {
+      if (!d.labels.includes("BLOCKED")) continue;
+      const comments = JSON.parse(gh(["issue", "view", String(d.number), "--repo", board.repo, "--json", "comments"])).comments;
+      const last = comments.map((c) => c.body).filter((b) => b.startsWith("factory: BLOCKED")).at(-1) ?? "";
+      if (!/^need: cascade:/m.test(last)) continue;
+      if (openBlockerNumbers(board.repo, d.number).some((b) => now.has(b))) continue;
+      script("clear.mjs", [String(d.number), "--solution", `cascade cleared: #${n} unblocked`], configPath);
+      log(`#${d.number}: cascade cleared (blocker #${n})`);
+    }
+  }
+  return now;
+}
+
+// Promote the frontier: open Backlog cards with no open blockers move to Ready.
+// to-tickets tickets arrive pre-specified, so Ready (planning) is the entry stage.
+function promoteFrontier(config, configPath, list) {
+  const { board } = config;
+  const target = config.commands?.Ready ? "Ready" : config.stages.find((s) => s !== "Backlog" && config.commands?.[s]?.command);
+  if (!target) return;
+  for (const card of list) {
+    if (card.stage !== "Backlog" || card.labels.includes("BLOCKED")) continue;
+    const { state, blocked } = blockerInfo(board.repo, card.number);
+    if (state !== "open" || blocked > 0) continue;
+    const moved = script("move.mjs", [String(card.number), target, "--from", "Backlog", "--reason", "frontier: no open blockers"], configPath);
+    if (moved.status === 0) log(`#${card.number}: Backlog -> ${target} (frontier)`);
+  }
+}
+
 // A card in "In review" whose closing PR is merged moves on. A person merges; the watcher only notices.
 function checkMerges(config, configPath, list) {
   const { board } = config;
