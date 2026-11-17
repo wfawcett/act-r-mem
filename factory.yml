@@ -30,47 +30,78 @@ labels:
   - BLOCKED
 # One command per stage. The factory names none. Pick your own prompt text, for example a slash command.
 # allowed_tools is the headless tool list for the stage. The starter list is only a floor: see README.
+# Runner and models are config: runner picks the binary (omp|claude), models maps a runner
+# to its model. A personal setup: omp + a local/free model. A CHG setup: claude + haiku.
+# Per-stage "models" overrides the top-level map for that stage only.
+runner: omp
+models:
+  omp: glm-5.3-flash
+  claude: haiku
 commands:
   Specify:
-    command: /specify
+    # Placeholders filled by run-phase: {{issue}} {{stage}} {{repo}} {{title}} {{body}}.
+    # The ticket text is injected, so a weak model never needs gh to read the card.
+    command: |
+      Write a short implementation spec for the card below.
+
+      Card title: {{title}}
+
+      Card body:
+      {{body}}
+
+      First read the repo: README.md, factory.yml, the source tree. The spec must cover, in this order:
+      1. **Goal** - one sentence describing the observable behavior when done.
+      2. **Approach** - the files to create or change and the key symbols/types involved. Concrete, no alternatives.
+      3. **Verification** - the exact command that proves the behavior (a test, a build, a script run) and what output proves it.
+      4. **Out of scope** - anything explicitly not part of this card.
+
+      Write the spec to `specs/{{issue}}-<slug>.md` in the repo root. Keep it under 60 lines. Do not implement anything. Do not run git commands that change state.
     model: sonnet
     max_turns: 30
     allowed_tools:
-      - Skill
       - Read
       - Glob
       - Grep
       - Write
-      - Bash(git *)
-      - Bash(gh issue view *)
   Ready:
-    command: /ready
+    command: |
+      Read the spec file for this card under `specs/` (the card is #{{issue}}; the spec file name starts with that number; if several match, take the highest). If none exists, block with the reason "no spec file".
+
+      Produce a short implementation plan as `specs/{{issue}}-plan.md`:
+      1. **Task list** - ordered, each item one sentence with the file(s) it touches.
+      2. **Types and interfaces** - the exact TypeScript signatures the new code exposes.
+      3. **Verification mapping** - for each task, the command from the spec's Verification section that will exercise it.
+      4. **Dependencies** - packages to add, if any, with the exact npm install line.
+
+      Do not implement anything. Do not run installers.
     model: sonnet
     max_turns: 60
     allowed_tools:
-      - Skill
       - Read
       - Glob
       - Grep
       - Write
-      - Bash(git *)
-      - Bash(gh issue view *)
-      - Bash(gh pr view *)
   In progress:
-    command: /build
+    command: |
+      Read the plan file for this card under `specs/` (the card is #{{issue}}; the plan file name starts with that number; if several match, take the highest). If none exists, block with "no plan file".
+
+      Implement every task in the plan's task list. For each task: make the smallest change that satisfies it, then commit with a message describing the task.
+
+      When all tasks are done, run the plan's Verification command end to end. If it fails, fix and rerun until it passes (max 3 fix attempts, then write blocked with the failing output).
+
+      Push the branch to origin and open a PR only if your tools allow it; otherwise block with the exact command a person should run. The PR body must contain: Closes #{{issue}}
+
+      Do not merge. Do not push to main.
     model: sonnet
     max_turns: 100
     allowed_tools:
-      - Skill
       - Read
       - Glob
       - Grep
       - Write
       - Edit
       - Bash(git *)
-      - Bash(gh issue view *)
-      - Bash(npm run *)
-      - Bash(npx tsx *)
+      - Bash(gh pr create *)
 poll_seconds: 300
 merge:
   auto: false

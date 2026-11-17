@@ -1,0 +1,176 @@
+#!/usr/bin/env node
+// run-phase.mjs <issue> <stage> --cwd <worktree> [--config <path>]
+// One attempt at one stage: start the worker with `claude -p`, read result.json, act on it.
+// Prints one line: done, blocked or retry. Contract: phase-contract.md.
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadConfig, parseArgs, run, UsageError } from "./lib/common.mjs";
+
+const CAP = 2;
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const oneLine = (t) => String(t).replace(/\s+/g, " ").trim();
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+run(() => {
+  const a = parseArgs(process.argv.slice(2), ["issue", "stage"], ["cwd", "config"]);
+  if (!/^\d+$/.test(a.issue)) throw new UsageError("<issue> must be a number");
+  if (!a.cwd) throw new UsageError("--cwd is required");
+  if (!fs.existsSync(a.cwd) || !fs.statSync(a.cwd).isDirectory()) throw new UsageError(`--cwd ${a.cwd} is not a directory`);
+  const config = loadConfig(a.config);
+  const idx = config.stages?.indexOf(a.stage) ?? -1;
+  if (idx < 0) throw new UsageError(`unknown stage "${a.stage}"`);
+  if (idx === config.stages.length - 1) throw new UsageError(`"${a.stage}" is the last stage`);
+  const cmd = config.commands?.[a.stage];
+  const need = (ok, what) => { if (!ok) throw new UsageError(`stage "${a.stage}" has no ${what} in factory.yml`); };
+  need(cmd && typeof cmd.command === "string" && cmd.command.trim(), "command");
+  need(cmd.model || cmd.models, "model");
+  need(cmd.max_turns, "max_turns");
+  need(Array.isArray(cmd.allowed_tools) && cmd.allowed_tools.length, "allowed_tools");
+
+  const dir = path.join(path.resolve(a.cwd), ".tmp", "factory", a.issue, slug(a.stage));
+  const resultFile = path.join(dir, "result.json");
+  const logFile = path.join(dir, "claude.log");
+  const attemptsFile = path.join(dir, "attempts");
+  const reasonFile = path.join(dir, "last-reason");
+  fs.mkdirSync(dir, { recursive: true });
+
+  const clearCount = () => { for (const f of [attemptsFile, reasonFile]) if (fs.existsSync(f)) fs.unlinkSync(f); };
+  const readCount = () => {
+    const n = fs.existsSync(attemptsFile) ? fs.readFileSync(attemptsFile, "utf8").trim() : "";
+    return /^\d+$/.test(n) ? Number(n) : 0;
+  };
+  // Child scripts run with this node, next to this file, no shell. --config is passed through.
+  const child = (script, args) => {
+    const r = spawnSync(process.execPath, [path.join(HERE, script), ...args, ...(a.config ? ["--config", a.config] : [])], {
+      encoding: "utf8", env: process.env,
+    });
+    if (r.stderr) process.stderr.write(r.stderr);
+    return r.status;
+  };
+  const fail = () => {
+    console.log(`error #${a.issue}: a board action failed in ${a.stage} (see stderr)`);
+    process.exit(1);
+  };
+  const blockAtCap = (reason) => {
+    const why = `${a.stage} failed ${CAP} times. Last reason: ${oneLine(reason)}. Log: ${logFile}`;
+    const status = child("block.mjs", [a.issue, "--need", `A person must find out why the ${a.stage} phase fails`, "--why", why]);
+    if (status !== 0) fail();
+    clearCount();
+    console.log(`blocked #${a.issue}: ${a.stage} failed ${CAP} times`);
+  };
+
+  // A block that failed at the cap is retried without starting the worker.
+  if (readCount() >= CAP) {
+    const last = fs.existsSync(reasonFile) ? fs.readFileSync(reasonFile, "utf8") : "unknown";
+    return blockAtCap(last);
+  }
+
+  if (fs.existsSync(resultFile)) fs.unlinkSync(resultFile);
+  // Runner and models are config in factory.yml: runner: omp|claude, models: {omp: ..., claude: ...}.
+  // FACTORY_RUNNER overrides for a one-off A/B test. Per-stage "models" overrides the top-level map.
+  const runner = String(process.env.FACTORY_RUNNER ?? config.runner ?? "claude").toLowerCase();
+  const modelOf = (c) => c?.models?.[runner];
+  const model = modelOf(cmd) ?? modelOf(config) ?? (typeof cmd?.model === "string" ? cmd.model : undefined) ?? "sonnet";
+  // run-phase fills placeholders so the worker never has to infer facts: {{issue}}, {{stage}},
+  // {{repo}}, {{title}}, {{body}}. The ticket text comes from gh here, in the trusted process,
+  // so a weak worker model never needs gh access just to read the card.
+  const repo = config.board?.repo ?? "";
+  let title = "";
+  let body = "";
+  if (/{{title}}|{{body}}/.test(cmd.command)) {
+    const r = spawnSync("gh", ["issue", "view", a.issue, "--repo", repo, "--json", "title,body"], { encoding: "utf8" });
+    if (r.status === 0) {
+      const data = JSON.parse(r.stdout);
+      title = data.title ?? "";
+      body = data.body ?? "";
+    } else {
+      console.error(`factory: could not read issue ${a.issue}: ${oneLine(r.stderr)}`);
+      process.exit(1);
+    }
+  }
+  const fill = (t) => String(t).replaceAll("{{issue}}", a.issue).replaceAll("{{stage}}", a.stage).replaceAll("{{repo}}", repo)
+    .replaceAll("{{title}}", title).replaceAll("{{body}}", body);
+  let stageText = fill(cmd.command);
+  // For omp a claude-style slash command expands to the command file body: one source of stage instructions.
+  if (runner === "omp" && stageText.startsWith("/")) {
+    const file = path.join(a.cwd, ".claude", "commands", `${stageText.slice(1).split(" ")[0]}.md`);
+    const raw = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+    stageText = fill(raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim() || cmd.command);
+  }
+  const log = fs.openSync(logFile, "w");
+  let proc;
+  if (runner === "omp") {
+    const contract = fs.readFileSync(path.join(HERE, "..", "agents", "factory-worker.md"), "utf8")
+      .replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+    // omp has no turn cap; max_turns maps to a wall-clock ceiling (2 min per turn, minimum 10 min).
+    const maxTime = Math.max(600, Number(cmd.max_turns) * 120);
+    // allowed_tools maps to omp's built-in tool names: Bash(...) -> bash, Skill -> inline (dropped).
+    const OMP_TOOLS = { read: "read", write: "write", edit: "edit", glob: "glob", grep: "grep" };
+    const tools = [...new Set(["read", ...(cmd.allowed_tools ?? []).map((t) => t.startsWith("Bash") ? "bash" : OMP_TOOLS[String(t).toLowerCase()]).filter(Boolean)])].join(",");
+    const userMsg = [stageText, "", `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
+    const ompArgs = ["-p", userMsg, "--system-prompt", contract, "--model", model,
+      "--max-time", String(maxTime), "--auto-approve", "--no-session",
+      "--no-skills", "--no-rules", "--no-context-files"];
+    if (tools) ompArgs.push("--tools", tools);
+    proc = spawnSync("omp", ompArgs, { cwd: a.cwd, stdio: ["ignore", log, log] });
+    if (process.env.FACTORY_DEBUG) {
+      fs.writeFileSync(path.join(dir, "argv.json"), JSON.stringify({ runner, model, ompArgs }, null, 2));
+    }
+  } else {
+    const prompt = [`Stage command: ${stageText}`, `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
+    proc = spawnSync(
+      "claude",
+      ["-p", prompt, "--agent", "factory:factory-worker", "--model", model, "--max-turns", String(cmd.max_turns),
+        "--permission-mode", "acceptEdits", "--allowedTools", cmd.allowed_tools.join(",")],
+      { cwd: a.cwd, stdio: ["ignore", log, log] },
+    );
+  }
+  fs.closeSync(log);
+
+  // Classify the outcome: a result, or the reason it is invalid.
+  let result = null;
+  let reason = "";
+  if (proc.error) reason = `claude could not start: ${proc.error.message}`;
+  else if (proc.status !== 0) reason = `claude exited ${proc.status ?? proc.signal}`;
+  else if (!fs.existsSync(resultFile)) reason = "result.json missing";
+  else {
+    try {
+      result = JSON.parse(fs.readFileSync(resultFile, "utf8"));
+    } catch {
+      reason = "result.json is not valid JSON";
+    }
+    if (reason) result = null;
+    else if (result === null || typeof result !== "object") reason = "result.json is not an object";
+    else if (result && !["done", "blocked", "failed"].includes(result?.status)) reason = `unknown status ${JSON.stringify(result?.status)}`;
+    else if (result?.status === "blocked" && !oneLine(result.need ?? "")) reason = "blocked with empty need";
+    if (reason) result = null;
+  }
+
+  if (result?.status === "done") {
+    const next = config.stages[idx + 1];
+    const status = child("move.mjs", [a.issue, next, "--from", a.stage, "--reason", `${a.stage} phase done`]);
+    if (status === 3) {
+      console.log(`moved #${a.issue}: a person moved the card during ${a.stage}. Nothing changed.`);
+      process.exit(3);
+    }
+    if (status !== 0) fail();
+    clearCount();
+    return console.log(`done #${a.issue}: ${a.stage} -> ${next}`);
+  }
+  if (result?.status === "blocked") {
+    const why = `${a.stage} phase blocked. Recommended: ${oneLine(result.recommended ?? "") || "none"}`;
+    if (child("block.mjs", [a.issue, "--need", oneLine(result.need), "--why", why]) !== 0) fail();
+    clearCount();
+    return console.log(`blocked #${a.issue}: ${a.stage} phase needs a person`);
+  }
+
+  // failed, or any invalid outcome
+  const why = result ? oneLine(result.need ?? "") || "worker reported failed" : reason;
+  const count = readCount() + 1;
+  fs.writeFileSync(attemptsFile, String(count));
+  fs.writeFileSync(reasonFile, why);
+  if (count < CAP) return console.log(`retry #${a.issue}: ${a.stage} attempt ${count} of ${CAP} failed (${why})`);
+  blockAtCap(why);
+});
