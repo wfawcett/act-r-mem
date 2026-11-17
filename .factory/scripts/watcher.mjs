@@ -133,7 +133,9 @@ function cascade(config, configPath, list, prev) {
 // to-tickets tickets arrive pre-specified, so Ready (planning) is the entry stage.
 function promoteFrontier(config, configPath, list) {
   const { board } = config;
-  const target = config.commands?.Ready ? "Ready" : config.stages.find((s) => s !== "Backlog" && config.commands?.[s]?.command);
+  // Enter the pipeline at the first machine stage after Backlog (normally Specify):
+  // a card needs a spec file before Ready can plan, and Specify is what writes it.
+  const target = config.stages.find((s) => s !== "Backlog" && config.commands?.[s]?.command);
   if (!target) return;
   for (const card of list) {
     if (card.stage !== "Backlog" || card.labels.includes("BLOCKED") || pipelineExempt(card)) continue;
