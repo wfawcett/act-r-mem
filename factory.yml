@@ -35,7 +35,7 @@ labels:
 # Per-stage "models" overrides the top-level map for that stage only.
 runner: omp
 models:
-  omp: glm-5.3-flash
+  omp: qwen3.8-27b-gsq-rco
   claude: haiku
 commands:
   Specify:
