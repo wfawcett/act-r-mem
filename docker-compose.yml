@@ -16,6 +16,7 @@ services:
       POSTGRES_USER: recall
       POSTGRES_PASSWORD: recall
       POSTGRES_DB: recall_test
+    ports: ["5433:5432"]
     profiles: ["test"]
     # Ephemeral: no volume, integration tests own it
 
