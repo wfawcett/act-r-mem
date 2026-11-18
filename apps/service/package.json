@@ -1,0 +1,13 @@
+{
+  "name": "@recall/service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Recall service: Fastify + MCP + worker (PRD §6)",
+  "scripts": {
+    "test:integration": "vitest run test/db.integration.test.ts"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

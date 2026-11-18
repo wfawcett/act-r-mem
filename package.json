@@ -21,5 +21,8 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }
