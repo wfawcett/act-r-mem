@@ -39,7 +39,7 @@ commands:
   Specify:
     command: ""
     model: "@default"
-    max_turns: 30
+    max_turns: 15
     allowed_tools:
       - Skill
       - Read
@@ -49,7 +49,7 @@ commands:
   Ready:
     command: ""
     model: "@default"
-    max_turns: 60
+    max_turns: 20
     allowed_tools:
       - Skill
       - Read
@@ -59,7 +59,7 @@ commands:
   In progress:
     command: ""
     model: "@default"
-    max_turns: 100
+    max_turns: 25
     allowed_tools:
       - Skill
       - Read

@@ -154,6 +154,12 @@ run(() => {
       `If any is missing, retry the delegation once; if it is still missing, write the result file yourself with {"status":"failed","need":"<agent> did not produce <path>"}.`;
     const ompArgs = ["-p", prompt, "--system-prompt", contract, "--model", model,
       "--max-time", String(maxTime), "--auto-approve", "--wait-async",
+      // Parent does stage work ONLY through delegation: the task tool is all it needs.
+      // Fewer tools = smaller system prompt = less context growth on the parent side.
+      "--tools", "task",
+      // Hard spend ceiling per stage invocation: a runaway delegation (e.g. the GPU
+      // crawl we saw) can outlive max-time usefulness; cost is the honest bound.
+      "--max-cost", String(cmd.max_cost ?? 2),
       "--no-skills", "--no-rules", "--no-context-files",
       // json mode: first event is {"type":"session","id":...} — the key that ties this
       // run to its LiteLLM spend rows. stdout is the event stream; it doubles as the log.
