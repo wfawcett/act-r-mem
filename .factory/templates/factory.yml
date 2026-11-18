@@ -31,11 +31,15 @@ labels:
   - REVIEW
 # One command per stage. The factory names none. Pick your own prompt text, for example a slash command.
 # allowed_tools is the headless tool list for the stage. The starter list is only a floor: see README.
+# runner picks the binary (omp); models maps a runner to a model or an omp model role.
+runner: omp
+models:
+  omp: "@default"
 commands:
   Specify:
     command: ""
-    model: sonnet
-    max_turns: 30
+    model: "@default"
+    max_turns: 15
     allowed_tools:
       - Skill
       - Read
@@ -44,8 +48,8 @@ commands:
       - Bash(git *)
   Ready:
     command: ""
-    model: sonnet
-    max_turns: 60
+    model: "@default"
+    max_turns: 20
     allowed_tools:
       - Skill
       - Read
@@ -54,8 +58,8 @@ commands:
       - Bash(git *)
   In progress:
     command: ""
-    model: sonnet
-    max_turns: 100
+    model: "@default"
+    max_turns: 25
     allowed_tools:
       - Skill
       - Read

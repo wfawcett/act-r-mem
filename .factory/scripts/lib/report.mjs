@@ -1,6 +1,6 @@
 // Build reports: aggregate LiteLLM spend-log rows for one factory stage run and render a
 // markdown comment. The proxy's LiteLLM_SpendLogs table is the authoritative ledger —
-// every omp/claude call carries spend, tokens, model and the omp session id.
+// every omp call carries spend, tokens, model and the omp session id.
 import { execFileSync } from "node:child_process";
 
 const esc = (s) => String(s).replaceAll("|", "\\|").replaceAll("\n", " ");
