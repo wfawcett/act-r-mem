@@ -11,7 +11,7 @@ Source spec: `specs/11-e02-activation-package.md`. Goal: implement the PRD §10.
 5. Write `test/spread.test.ts` covering fan division, hop limit, pruning below `pruneEpsilon`, `maxExpanded` cap, cues excluded, and frontier ordering (activation desc then id asc) for tie-breaks.
 6. Write `test/scoring.test.ts` covering the `S ≥ minSpread` gate, the `A = B + spreadWeight·S ≥ recallThreshold` gate, A-desc/id-asc sort, top `resultLimit`, `pathEdges` backward walk collecting edge ids, and exposure lane. DONE: test file implemented and passing (52/52).
 7. Update `test/smoke.test.ts` to import a real export (e.g. `DAY`) instead of the placeholder.
-8. Add `test/determinism.property.test.ts`: seeded PRNG builds 1,000 random graphs, runs `spread` + `score` twice each, asserts byte-identical `JSON.stringify`.
+8. Add `test/determinism.property.test.ts`: seeded PRNG builds 1,000 random graphs, runs `spread` + `score` twice each, asserts byte-identical `JSON.stringify`. DONE: xorshift32-seeded corpus (50 nodes, 120 edges, varied node/edge states) run twice per graph plus a second-seed full-corpus replay; both green.
 9. Install `@vitest/coverage-v8` at the workspace root (`pnpm add -D -w @vitest/coverage-v8`) so `--coverage` works; keep the package dependency-free.
 10. Verify: `pnpm --filter activation test --coverage` reports all green with 100% branches, run twice for NFR-07 byte-identical determinism (do not execute here).
 
