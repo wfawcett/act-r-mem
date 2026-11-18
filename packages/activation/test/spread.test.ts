@@ -33,7 +33,7 @@ const DAY = 86_400_000;
 
 // Build a Graph with an adjacency list from plain edges (spread ignores graph.nodes here).
 function graphFrom(edges: { id: number; from: number; to: number; w?: number }[]): Graph {
-  const adj = new Map<number, Array<EdgeState & { id: number }>>();
+  const adj = new Map<number, Array<{ id: number; to: number } & EdgeState>>();
   for (const e of edges) {
     const list = adj.get(e.from) ?? [];
     list.push({
@@ -60,9 +60,11 @@ describe("spread — fan division (SC-07)", () => {
     const fFew = spread(few, [{ id: 100, activation: 1 }], now, P);
     const fMany = spread(many, [{ id: 200, activation: 1 }], now, P);
     // Same edge weight (1), but fan 1 vs. fan 2 → the low-fan path carries more to its target.
-    expect(fFew[0].amount).toBeGreaterThan(fMany[0].amount);
-    expect(fFew[0].amount).toBeCloseTo((1 * 1 * P.damping) / 1, 12);
-    expect(fMany[0].amount).toBeCloseTo((1 * 1 * P.damping) / 2, 12);
+    const fFewFirst = fFew[0]!;
+    const fManyFirst = fMany[0]!;
+    expect(fFewFirst.amount).toBeGreaterThan(fManyFirst.amount);
+    expect(fFewFirst.amount).toBeCloseTo((1 * 1 * P.damping) / 1, 12);
+    expect(fManyFirst.amount).toBeCloseTo((1 * 1 * P.damping) / 2, 12);
   });
 
   it("divides by the true fan even with several outgoing edges", () => {
@@ -137,7 +139,8 @@ describe("spread — pruning below epsilon", () => {
     const adj = new Map([[1, [{ to: 2, id: 7, strength: e.strength, lastUsedAt: e.lastUsedAt, halfLifeClass: e.halfLifeClass }]]]);
     const flows = spread({ nodes: new Map(), adj }, [{ id: 1, activation: 1 }], now, P);
     expect(flows.length).toBe(1);
-    expect(flows[0].amount).toBeCloseTo(P.edgeFloor * P.damping, 12);
+    const only = flows[0]!;
+    expect(only.amount).toBeCloseTo(P.edgeFloor * P.damping, 12);
   });
 });
 
@@ -175,7 +178,8 @@ describe("spread — frontier ordering (activation desc, then id asc)", () => {
     ]);
     const flows = spread({ nodes: new Map(), adj }, [{ id: 10, activation: 0.3 }, { id: 20, activation: 0.9 }], now, P);
     // The 0.9 cue (id 20) is expanded first → its flow appears first.
-    expect(flows[0].from).toBe(20);
+    const first = flows[0]!;
+    expect(first.from).toBe(20);
   });
 
   it("breaks ties by ascending id when activation is equal", () => {
@@ -186,7 +190,8 @@ describe("spread — frontier ordering (activation desc, then id asc)", () => {
     ]);
     const flows = spread({ nodes: new Map(), adj }, [{ id: 5, activation: 0.5 }, { id: 3, activation: 0.5 }], now, P);
     // Equal activation → lower id (3) expands first.
-    expect(flows[0].from).toBe(3);
+    const first = flows[0]!;
+    expect(first.from).toBe(3);
   });
 
   it("is deterministic across runs for the same graph and cues", () => {
@@ -232,7 +237,7 @@ describe("spread — maxExpanded cap", () => {
     const now = DAY;
     // Two-hop star: source fans out to many intermediates, each of which fans to many leaves. Cap keeps expansion bounded.
     const firstFan = Array.from({ length: 40 }, (_, i) => ({ to: 100 + i, id: 1 + i, strength: 1, lastUsedAt: 0, halfLifeClass: "default" as const }));
-    const secondAdj = new Map<number, Array<EdgeState & { id: number }>>([[1, firstFan]]);
+    const secondAdj = new Map<number, Array<{ id: number; to: number } & EdgeState>>([[1, firstFan]]);
     for (let k = 2; k <= 40; k++) secondAdj.set(k, [{ to: 1000 + k, id: 500 + k, strength: 1, lastUsedAt: 0, halfLifeClass: "default" as const }]);
     secondAdj.set(1, firstFan);
     const adj = new Map([[1, firstFan], ...secondAdj.entries()]);

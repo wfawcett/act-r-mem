@@ -162,7 +162,7 @@ describe("pathEdges — backward walk collecting edge ids", () => {
 
   it("recovers the cue→target path from real spread output", () => {
     const now = DAY;
-    const adj = new Map<number, Array<EdgeState & { id: number }>>([
+    const adj = new Map<number, Array<{ id: number; to: number } & EdgeState>>([
       [1, [{ id: 11, to: 2, strength: 1, lastUsedAt: 0, halfLifeClass: "default" }]],
       [2, [{ id: 12, to: 3, strength: 1, lastUsedAt: 0, halfLifeClass: "default" }]],
       [3, [{ id: 13, to: 4, strength: 1, lastUsedAt: 0, halfLifeClass: "default" }]],
@@ -177,7 +177,7 @@ describe("score + pathEdges — exposure lane", () => {
   it("reaches a dormant neighbor via spread but leaves it out of the associative rows", () => {
     const now = 100 * DAY;
     // Episode 10 (recalled), dormant detail 20 behind a floor-strength edge, healthy neighbor 30.
-    const adj = new Map<number, Array<EdgeState & { id: number }>>([
+    const adj = new Map<number, Array<{ id: number; to: number } & EdgeState>>([
       [1, [{ id: 41, to: 10, strength: 1, lastUsedAt: now, halfLifeClass: "default" }]],
       [
         10,

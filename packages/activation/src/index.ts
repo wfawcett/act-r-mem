@@ -4,6 +4,21 @@
  */
 import type { Activation, Cue, EdgeState, Flow, Graph, Kind, Nodes, Params, ScoreRow } from "./types.js";
 
+// Public type surface — consumers import everything from the package root.
+export type {
+  Activation,
+  Cue,
+  EdgeState,
+  Flow,
+  Graph,
+  HalfLifeClass,
+  Kind,
+  NodeState,
+  Nodes,
+  Params,
+  ScoreRow,
+} from "./types.js";
+
 export const DAY = 86_400_000;
 
 // §10.1 base level with the Petrov hybrid tail term for unstored older accesses. When there are
@@ -18,7 +33,7 @@ export function baseLevel(n: NodeState, now: number, p: Params): number {
   if (rest > 0 && m > 0) {
     const L = Math.max((now - n.createdAt) / DAY, p.minAgeDays);
     const tm = ages[m - 1];
-    if (L - tm >= p.minAgeDays) {
+    if (tm !== undefined && L - tm >= p.minAgeDays) {
       const k = 1 - p.decay;
       sum += (rest * (Math.pow(L, k) - Math.pow(tm, k))) / (k * (L - tm));
     }

@@ -96,6 +96,8 @@ export type Cue = { id: number; activation: number }; // source activation (1.0 
 
 > Note: `Graph`, `Cue`, `Nodes`, `Activation`, and `ScoreRow` are helper input/output shapes that the exact signature in the spec leaves open (`spread(g, cues, now, p)` and `score(nodes, activation, now, p)`). They are listed here as the minimal concrete types; refine to whatever minimal shape keeps strict TS with no `any`.
 
+> Build note: tsc found `spread` already reading `g.adj` while `Graph` declared a flat `edges` list; `Graph` now carries `adj: Map<number, Array<{ id, to } & EdgeState>>` (the `edges`/`GraphEdge` shape was unused and is gone), `index.ts` re-exports the type surface from the package root, the two `noUncheckedIndexedAccess` errors on `tm` in `baseLevel` are fixed with an `undefined` guard, and the package build is type-check only (`noEmit`) so tsc does not drop compiled `.js`/`.d.ts` next to sources where vitest would pick them up.
+
 ## 3. Verification mapping
 
 | Task | Verification command that exercises it |

@@ -44,14 +44,11 @@ export interface EdgeState {
 
 export type Flow = { hop: number; from: number; to: number; edge: number; amount: number };
 
-// Traversal inputs (§10.3 / §10.4). Graph edges are traversed in both directions by spread.
-export interface GraphEdge extends EdgeState {
-  id: number;
-}
-
+// Traversal input (§10.3). Undirected adjacency: adj[u] lists every edge incident to u
+// with its far endpoint `to` — spread pushes activation in both directions through one entry.
 export interface Graph {
   nodes: Map<number, NodeState>;
-  edges: Array<{ id: number; from: number; to: number; state: GraphEdge; superseded?: boolean }>;
+  adj: Map<number, Array<{ id: number; to: number } & EdgeState>>;
 }
 
 export type Cue = { id: number; activation: number }; // source activation (1.0 explicit, cosine sim via vector search)
