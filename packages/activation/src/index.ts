@@ -2,7 +2,7 @@
  * Pure ACT-R declarative-memory math (PRD §10.1–10.4). E02 fills this package.
  * Invariants (PRD §2.3): no I/O, no randomness, no Date.now() — `now` is always a parameter.
  */
-import type { Activation, Cue, EdgeState, Flow, Graph, Kind, Nodes, Params, ScoreRow } from "./types.js";
+import type { Activation, Cue, EdgeState, Flow, Graph, Nodes, Params, ScoreRow } from "./types.js";
 
 // Public type surface — consumers import everything from the package root.
 export type {
