@@ -30,13 +30,12 @@ labels:
   - BLOCKED
 # One command per stage. The factory names none. Pick your own prompt text, for example a slash command.
 # allowed_tools is the headless tool list for the stage. The starter list is only a floor: see README.
-# Runner and models are config: runner picks the binary (omp|claude), models maps a runner
-# to its model. A personal setup: omp + a local/free model. A CHG setup: claude + haiku.
+# Runner and models are config: runner picks the binary (omp), models maps a runner
+# to a model or an omp model role (@default, @smol, @slow, @plan).
 # Per-stage "models" overrides the top-level map for that stage only.
 runner: omp
 models:
-  omp: qwen3.8-27b-gsq-rco
-  claude: haiku
+  omp: "@default"
 commands:
   Specify:
     # Placeholders filled by run-phase: {{issue}} {{stage}} {{repo}} {{title}} {{body}}.

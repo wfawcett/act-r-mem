@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // run-phase.mjs <issue> <stage> --cwd <worktree> [--config <path>]
-// One attempt at one stage: start the worker with `claude -p`, read result.json, act on it.
+// One attempt at one stage: start the worker with `omp -p`, read result.json, act on it.
 // Prints one line: done, blocked or retry. Contract: phase-contract.md.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -86,11 +86,11 @@ run(() => {
   }
 
   if (fs.existsSync(resultFile)) fs.unlinkSync(resultFile);
-  // Runner and models are config in factory.yml: runner: omp|claude, models: {omp: ..., claude: ...}.
-  // FACTORY_RUNNER overrides for a one-off A/B test. Per-stage "models" overrides the top-level map.
-  const runner = String(process.env.FACTORY_RUNNER ?? config.runner ?? "claude").toLowerCase();
+  // Runner and models are config in factory.yml: runner: omp, models: {omp: <model|@role>}.
+  // FACTORY_RUNNER overrides for a one-off test. Per-stage "models" overrides the top-level map.
+  const runner = String(process.env.FACTORY_RUNNER ?? config.runner ?? "omp").toLowerCase();
   const modelOf = (c) => c?.models?.[runner];
-  const model = modelOf(cmd) ?? modelOf(config) ?? (typeof cmd?.model === "string" ? cmd.model : undefined) ?? "sonnet";
+  const model = modelOf(cmd) ?? modelOf(config) ?? (typeof cmd?.model === "string" ? cmd.model : undefined) ?? "@default";
   // run-phase fills placeholders so the worker never has to infer facts: {{issue}}, {{stage}},
   // {{repo}}, {{title}}, {{body}}. The ticket text comes from gh here, in the trusted process,
   // so a weak worker model never needs gh access just to read the card.
@@ -114,7 +114,7 @@ run(() => {
     // glm-5.3-flash: the worker stops emitting tool calls). De-fence the injected text.
     .replaceAll("```", "%%%");
   let stageText = fill(cmd.command);
-  // For omp a claude-style slash command expands to the command file body: one source of stage instructions.
+  // A claude-style slash command expands to the command file body: one source of stage instructions.
   if (runner === "omp" && stageText.startsWith("/")) {
     const file = path.join(a.cwd, ".claude", "commands", `${stageText.slice(1).split(" ")[0]}.md`);
     const raw = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
@@ -123,7 +123,7 @@ run(() => {
   const log = fs.openSync(logFile, "w");
   let proc;
   let ompSessionId = null;
-  if (runner === "omp") {
+  {
     const contract = fs.readFileSync(path.join(HERE, "..", "agents", "factory-worker.md"), "utf8")
       .replace(/^---\n[\s\S]*?\n---\n/, "").trim();
     // omp has no turn cap; max_turns maps to a wall-clock ceiling (2 min per turn, minimum 10 min).
@@ -151,22 +151,14 @@ run(() => {
       const first = fs.readFileSync(jsonLog, "utf8").split("\n").find(Boolean);
       if (first) ompSessionId = JSON.parse(first).id;
     } catch { /* report runs without usage numbers instead */ }
-  } else {
-    const prompt = [`Stage command: ${stageText}`, `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
-    proc = spawnSync(
-      "claude",
-      ["-p", prompt, "--agent", "factory:factory-worker", "--model", model, "--max-turns", String(cmd.max_turns),
-        "--permission-mode", "acceptEdits", "--allowedTools", cmd.allowed_tools.join(",")],
-      { cwd: a.cwd, stdio: ["ignore", log, log] },
-    );
   }
   fs.closeSync(log);
 
   // Classify the outcome: a result, or the reason it is invalid.
   let result = null;
   let reason = "";
-  if (proc.error) reason = `claude could not start: ${proc.error.message}`;
-  else if (proc.status !== 0) reason = `claude exited ${proc.status ?? proc.signal}`;
+  if (proc.error) reason = `omp could not start: ${proc.error.message}`;
+  else if (proc.status !== 0) reason = `omp exited ${proc.status ?? proc.signal}`;
   else if (!fs.existsSync(resultFile)) reason = "result.json missing";
   else {
     try {
