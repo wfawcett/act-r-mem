@@ -9,7 +9,7 @@ Source spec: `specs/11-e02-activation-package.md`. Goal: implement the PRD §10.
 3. Write `test/base-level.test.ts` covering base-level (recent + hybrid tail term, dropped-term edge when `L − Δt_m < minAgeDays`, age clamping) and recall probability / dormancy branches.
 4. Write `test/edges.test.ts` covering half-life decay, floor at `edgeFloor`, reinforcement decay-then-cap, `recordAccess` dormant revive, **SC-10** (dormant node used → +3 accesses, no longer dormant) and **SC-11** (edge unused 5 years → strength exactly 0.001, still traversed).
 5. Write `test/spread.test.ts` covering fan division, hop limit, pruning below `pruneEpsilon`, `maxExpanded` cap, cues excluded, and frontier ordering (activation desc then id asc) for tie-breaks.
-6. Write `test/scoring.test.ts` covering the `S ≥ minSpread` gate, the `A = B + spreadWeight·S ≥ recallThreshold` gate, A-desc/id-asc sort, top `resultLimit`, `pathEdges` backward walk collecting edge ids, and exposure lane.
+6. Write `test/scoring.test.ts` covering the `S ≥ minSpread` gate, the `A = B + spreadWeight·S ≥ recallThreshold` gate, A-desc/id-asc sort, top `resultLimit`, `pathEdges` backward walk collecting edge ids, and exposure lane. DONE: test file implemented and passing (52/52).
 7. Update `test/smoke.test.ts` to import a real export (e.g. `DAY`) instead of the placeholder.
 8. Add `test/determinism.property.test.ts`: seeded PRNG builds 1,000 random graphs, runs `spread` + `score` twice each, asserts byte-identical `JSON.stringify`.
 9. Install `@vitest/coverage-v8` at the workspace root (`pnpm add -D -w @vitest/coverage-v8`) so `--coverage` works; keep the package dependency-free.
