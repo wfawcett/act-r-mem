@@ -32,7 +32,7 @@ run(() => {
 
   const dir = path.join(path.resolve(a.cwd), ".tmp", "factory", a.issue, slug(a.stage));
   const resultFile = path.join(dir, "result.json");
-  const logFile = path.join(dir, "claude.log");
+  const logFile = path.join(dir, "worker.log");
   const startedAt = new Date().toISOString();
   // Report cutoff: capture rows up to a moment after the worker exits, so late proxy
   // writes are not raced. Computed once here, used by postReport.
@@ -139,7 +139,7 @@ run(() => {
       // run to its LiteLLM spend rows. stdout is the event stream; it doubles as the log.
       "--mode", "json"];
     if (tools) ompArgs.push("--tools", tools);
-    const jsonLog = path.join(dir, "claude.jsonl");
+    const jsonLog = path.join(dir, "worker.jsonl");
     const jsonFd = fs.openSync(jsonLog, "w");
     proc = spawnSync("omp", ompArgs, { cwd: a.cwd, stdio: ["ignore", jsonFd, log] });
     fs.closeSync(jsonFd);

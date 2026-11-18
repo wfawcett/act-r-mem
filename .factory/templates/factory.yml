@@ -38,7 +38,7 @@ models:
 commands:
   Specify:
     command: ""
-    model: sonnet
+    model: "@default"
     max_turns: 30
     allowed_tools:
       - Skill
@@ -48,7 +48,7 @@ commands:
       - Bash(git *)
   Ready:
     command: ""
-    model: sonnet
+    model: "@default"
     max_turns: 60
     allowed_tools:
       - Skill
@@ -58,7 +58,7 @@ commands:
       - Bash(git *)
   In progress:
     command: ""
-    model: sonnet
+    model: "@default"
     max_turns: 100
     allowed_tools:
       - Skill
