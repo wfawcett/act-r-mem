@@ -13,6 +13,14 @@ const CAP = 2;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const oneLine = (t) => String(t).replace(/\s+/g, " ").trim();
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+// Subagent architecture: each stage runs as a subagent of a short-lived parent omp session.
+// Maps stage -> project agent name (.factory/agents/<name>.md). Unlisted stages fall back
+// to omp's general `task` agent.
+const OMP_STAGE_AGENT = {
+  Specify: "specify-agent",
+  Ready: "ready-agent",
+  "In progress": "progress-agent",
+};
 
 run(() => {
   const a = parseArgs(process.argv.slice(2), ["issue", "stage"], ["cwd", "config"]);
@@ -124,27 +132,44 @@ run(() => {
   let proc;
   let ompSessionId = null;
   {
+    // Subagent architecture: the stage contract lives in a project agent file
+    // (.factory/agents/<stage>-agent.md), and this stage runs as a HUB-VISIBLE subagent
+    // of a short-lived parent omp session. The parent's only job is to spawn the agent,
+    // hand it the assignment, and wait (--wait-async) for it to finish.
     const contract = fs.readFileSync(path.join(HERE, "..", "agents", "factory-worker.md"), "utf8")
       .replace(/^---\n[\s\S]*?\n---\n/, "").trim();
     // omp has no turn cap; max_turns maps to a wall-clock ceiling (2 min per turn, minimum 10 min).
     const maxTime = Math.max(600, Number(cmd.max_turns) * 120);
-    // allowed_tools maps to omp's built-in tool names: Bash(...) -> bash, Skill -> inline (dropped).
-    const OMP_TOOLS = { read: "read", write: "write", edit: "edit", glob: "glob", grep: "grep" };
-    const tools = [...new Set(["read", ...(cmd.allowed_tools ?? []).map((t) => t.startsWith("Bash") ? "bash" : OMP_TOOLS[String(t).toLowerCase()]).filter(Boolean)])].join(",");
-    const userMsg = [stageText, "", `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
-    const ompArgs = ["-p", userMsg, "--system-prompt", contract, "--model", model,
-      "--max-time", String(maxTime), "--auto-approve",
+    const agentName = OMP_STAGE_AGENT[a.stage] ?? "task";
+    // omp discovers project agents only under <cwd>/.omp/agents. Our contracts live in
+    // .factory/agents (committed), so sync the stage's agent file there before spawning.
+    // Idempotent: overwrite on every run, so committed contract changes take effect.
+    const agentSrc = path.join(HERE, "..", "agents", `${agentName}.md`);
+    const agentDst = path.join(a.cwd, ".omp", "agents", `${agentName}.md`);
+    if (agentName !== "task") {
+      fs.mkdirSync(path.dirname(agentDst), { recursive: true });
+      fs.copyFileSync(agentSrc, agentDst);
+    }
+    // The assignment IS the rendered stage command plus the facts the agent cannot infer:
+    // card, stage, result file. The agent file holds the generic contract; the assignment
+    // holds the card-specific instructions and artifact paths.
+    const assignment = [stageText, "", `Card: #${a.issue}. Stage: ${a.stage}.`, `Result file: ${resultFile}`].join("\n");
+    const prompt = `Delegate this assignment to the \`${agentName}\` agent (task tool), label it \`${a.stage}-${a.issue}\`, and wait for its result.\n\n` +
+      `Assignment (pass verbatim):\n${assignment}\n\n` +
+      `After the agent finishes, check every artifact path listed in the assignment exists. ` +
+      `If any is missing, retry the delegation once; if it is still missing, write the result file yourself with {"status":"failed","need":"<agent> did not produce <path>"}.`;
+    const ompArgs = ["-p", prompt, "--system-prompt", contract, "--model", model,
+      "--max-time", String(maxTime), "--auto-approve", "--wait-async",
       "--no-skills", "--no-rules", "--no-context-files",
       // json mode: first event is {"type":"session","id":...} — the key that ties this
       // run to its LiteLLM spend rows. stdout is the event stream; it doubles as the log.
       "--mode", "json"];
-    if (tools) ompArgs.push("--tools", tools);
-    const jsonLog = path.join(dir, "claude.jsonl");
+    const jsonLog = path.join(dir, "worker.jsonl");
     const jsonFd = fs.openSync(jsonLog, "w");
     proc = spawnSync("omp", ompArgs, { cwd: a.cwd, stdio: ["ignore", jsonFd, log] });
     fs.closeSync(jsonFd);
     if (process.env.FACTORY_DEBUG) {
-      fs.writeFileSync(path.join(dir, "argv.json"), JSON.stringify({ runner, model, ompArgs }, null, 2));
+      fs.writeFileSync(path.join(dir, "argv.json"), JSON.stringify({ runner, model, agentName, ompArgs }, null, 2));
     }
     // Recover the session id (and keep text logs useful): first line of the event stream.
     try {
