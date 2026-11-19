@@ -14,10 +14,10 @@ async function migrate(): Promise<string> {
 // Each table holds a value we can read back to prove the round trip survived.
 const VALUES = {
   nodes: { kind: 'entity', label: 'apple', content: 'a red fruit', label_norm: 'apple' },
-  edges: { predicate: 'with', sourceId: null, targetId: null, strength: 0.5 },
+  edges: { predicate: 'with', sourceId: null as number | null, targetId: null as number | null, strength: 0.5 },
   ingestQueue: { kind: 'remember', client: 'claude-code', payload: { text: 'hi' } },
   sessions: { id: 'sess-123', client: 'hermes', title: 'recall test' },
-  recallTrace: { sessionId: null, query: 'what did I read?', cueIds: [1], cueWeights: [1.0], hops: [{ hop: 'associative', from: null, to: null, edge: null, amount: 1 }], recalled: [], params: {}, durationMs: 5 },
+  recallTrace: { sessionId: null, query: 'what did I read?', cueIds: [1], cueWeights: [1.0], hops: [{ hop: 'associative', from: null, to: null, edge: null, amount: 1 }], recalled: [], params: {}, durationMs: 5, nodeId: null as number | null },
 };
 
 describe('db integration', () => {
@@ -45,8 +45,8 @@ describe('db integration', () => {
       await pool.query(`INSERT INTO nodes (kind, label, content, label_norm) VALUES ($1,$2,$3,$4)`, ['entity','apple-clone','a clone','apple-clone']);
       ids = (await pool.query('SELECT id FROM nodes ORDER BY id LIMIT 2')).rows.map((r) => Number(r.id));
     }
-    VALUES.edges.sourceId = ids[0];
-    VALUES.edges.targetId = ids[1];
+    VALUES.edges.sourceId = ids[0]!;
+    VALUES.edges.targetId = ids[1]!;
     const res = await pool.query(
       `INSERT INTO edges (src, dst, predicate, strength) VALUES ($1, $2, $3, $4) RETURNING predicate, strength`,
       [VALUES.edges.sourceId, VALUES.edges.targetId, VALUES.edges.predicate, VALUES.edges.strength],
