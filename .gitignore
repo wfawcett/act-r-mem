@@ -1,7 +1,8 @@
-.tmp/*
+.tmp/
 node_modules/
 dist/
 out/
+coverage/
 *.tsbuildinfo
 # omp runtime state synced by factory: .omp/agents are copies of .factory/agents,
 # .omp/sessions hold the hub-visible stage runs. Both are per-worktree artifacts.

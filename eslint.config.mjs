@@ -17,4 +17,9 @@ export default tseslint.config(
       "@typescript-eslint/consistent-type-imports": "error",
     },
   },
+  {
+    // DB migrations and other plain-Node .mjs entrypoints are browser-free too.
+    files: ["db/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+  },
 );
