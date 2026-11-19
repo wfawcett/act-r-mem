@@ -1,0 +1,33 @@
+{
+  "skill_name": "inspect",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/factory:inspect with no argument, on a board where card 7 is BLOCKED in In progress and card 9 is REVIEW in In review.",
+      "expected_output": "The skill runs scripts/stopped.mjs and shows one line per stopped card with stage and reason, and nothing else.",
+      "expectations": [
+        "AC6: the skill runs scripts/stopped.mjs",
+        "AC6: the output lists card 7 with BLOCKED and card 9 with REVIEW",
+        "AC6: no card is changed and clear.mjs is not run"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/factory:inspect 7 on a BLOCKED card whose stage has a command. The command finishes and the problem is fixed.",
+      "expected_output": "The skill explains the stop, runs the stage command in this session with the block comment as context, then runs clear.mjs with a one-paragraph solution.",
+      "expectations": [
+        "AC7: the stage command from factory.yml runs through the Skill tool with the block comment after it",
+        "AC7: clear.mjs runs once, after the command ended, with a one-paragraph solution"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/factory:inspect 7 on a BLOCKED card. While the stage command runs, the person stops it.",
+      "expected_output": "The skill does not run clear.mjs and says the card stays blocked.",
+      "expectations": [
+        "AC7: clear.mjs is never run",
+        "AC7: the skill says the card stays blocked"
+      ]
+    }
+  ]
+}

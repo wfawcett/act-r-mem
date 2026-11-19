@@ -1,0 +1,71 @@
+# factory.yml: board ids and one command per stage.
+# Written by factory:install. Keep to simple "key: value" lines, "- item" lists
+# and nested maps. No inline comments.
+board:
+  repo: OWNER/REPO
+  owner: OWNER
+  project_number: 0
+  project_id: PROJECT_ID
+  field_name: Status
+  field_id: FIELD_ID
+  options:
+    Backlog: OPTION_ID
+    Specify: OPTION_ID
+    Spec Review: OPTION_ID
+    Ready: OPTION_ID
+    In progress: OPTION_ID
+    In review: OPTION_ID
+    Approved: OPTION_ID
+    Done: OPTION_ID
+stages:
+  - Backlog
+  - Specify
+  - Spec Review
+  - Ready
+  - In progress
+  - In review
+  - Approved
+  - Done
+labels:
+  - BLOCKED
+  - REVIEW
+# One command per stage. The factory names none. Pick your own prompt text, for example a slash command.
+# allowed_tools is the headless tool list for the stage. The starter list is only a floor: see README.
+# runner picks the binary (omp); models maps a runner to a model or an omp model role.
+runner: omp
+models:
+  omp: "@default"
+commands:
+  Specify:
+    command: ""
+    model: "@default"
+    max_turns: 15
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Bash(git *)
+  Ready:
+    command: ""
+    model: "@default"
+    max_turns: 20
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Bash(git *)
+  In progress:
+    command: ""
+    model: "@default"
+    max_turns: 25
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Bash(git *)
+poll_seconds: 300
+merge:
+  auto: false

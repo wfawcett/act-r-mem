@@ -1,0 +1,27 @@
+{
+  "skill_name": "install",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/factory:install acme/widgets. Answer the questions with the recommended answers. When asked to apply the plan, answer no.",
+      "expected_output": "The command checks gh auth, shows the full plan, asks once for consent, receives no, and stops. Nothing is created or changed.",
+      "expectations": [
+        "AC2: the plan lists the Project, the stage options, the BLOCKED and REVIEW labels, factory.yml and the .tmp/* line before any change",
+        "AC2: the command asks for consent once",
+        "AC2: after the answer no, no gh project create, gh label create, gh issue create or file write runs",
+        "AC2: the command does not edit .claude/settings.json"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/factory:install acme/widgets on a repo where the Project, the labels, factory.yml and the .tmp/* line already exist. Answer yes to apply.",
+      "expected_output": "The plan marks every item as no change. The command changes nothing. The dummy card test still runs and cleans up after itself.",
+      "expectations": [
+        "AC4: every plan item is marked as already present or no change",
+        "AC4: no second Project is created",
+        "AC4: factory.yml is left unchanged",
+        "AC4: .gitignore holds one .tmp/* line, not two"
+      ]
+    }
+  ]
+}

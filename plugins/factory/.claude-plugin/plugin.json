@@ -1,0 +1,7 @@
+{
+  "name": "factory",
+  "version": "0.3.0",
+  "description": "Board mechanics for a team's own stage method: set up a GitHub Project, move cards, stop or clear a card on a label, and keep an audit comment on every automatic move.",
+  "author": {"name": "CHG Engineering"},
+  "dependencies": ["atlassian-worker"]
+}

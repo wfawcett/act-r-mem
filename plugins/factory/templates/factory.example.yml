@@ -1,0 +1,86 @@
+# Example factory.yml: the three commands are wired to the Engineering Design and Engineering Build skills.
+# Copy the commands and allowed_tools into your own factory.yml. factory:install never overwrites it.
+# Keep to simple "key: value" lines, "- item" lists
+# and nested maps. No inline comments.
+board:
+  repo: OWNER/REPO
+  owner: OWNER
+  project_number: 0
+  project_id: PROJECT_ID
+  field_name: Status
+  field_id: FIELD_ID
+  options:
+    Backlog: OPTION_ID
+    Specify: OPTION_ID
+    Spec Review: OPTION_ID
+    Ready: OPTION_ID
+    In progress: OPTION_ID
+    In review: OPTION_ID
+    Approved: OPTION_ID
+    Done: OPTION_ID
+stages:
+  - Backlog
+  - Specify
+  - Spec Review
+  - Ready
+  - In progress
+  - In review
+  - Approved
+  - Done
+labels:
+  - BLOCKED
+  - REVIEW
+# Runner and models are config: runner picks the binary (omp), models maps a runner
+# to a model or an omp model role (@default, @smol, @slow, @plan). Per-stage
+# "models" overrides the top-level map for that stage only.
+runner: omp
+models:
+  omp: "@default"
+# One command per stage. The factory names none. Pick your own prompt text, for example a slash command.
+# allowed_tools is the headless tool list for the stage. This example is wider than the starter floor.
+commands:
+  Specify:
+    command: "Run the engineering-design:retrofit-spec skill on this card's issue. If extra context follows, it describes a block. Fix that problem."
+    model: sonnet
+    max_turns: 30
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Edit
+      - Write
+      - Bash(git *)
+      - Bash(gh *)
+      - Bash(node *)
+  Ready:
+    command: "Run the engineering-design:draft-clarification-questions skill, then the engineering-design:verify-spec-against-code skill, on this card's issue. If extra context follows, it describes a block. Fix that problem."
+    model: sonnet
+    max_turns: 60
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Edit
+      - Write
+      - Bash(git *)
+      - Bash(gh *)
+      - Bash(node *)
+  In progress:
+    command: "Run the engineering-build skills in order: ground-implementation-context, create-technical-task-list, run-build-tasks, refactor-implementation, validate-and-review-build, report-build-summary. If extra context follows, it describes a block. Fix that problem."
+    model: sonnet
+    max_turns: 100
+    allowed_tools:
+      - Skill
+      - Read
+      - Glob
+      - Grep
+      - Edit
+      - Write
+      - Bash(git *)
+      - Bash(gh *)
+      - Bash(node *)
+poll_seconds: 300
+merge:
+  auto: false
