@@ -20,7 +20,8 @@ const VALUES = {
   recallTrace: { sessionId: null, query: 'what did I read?', cueIds: [1], cueWeights: [1.0], hops: [{ hop: 'associative', from: null, to: null, edge: null, amount: 1 }], recalled: [], params: {}, durationMs: 5, nodeId: null as number | null },
 };
 
-describe('db integration', () => {
+const DbIntegration = process.env.DATABASE_URL ? describe : describe.skip;
+DbIntegration('db integration', () => {
   beforeAll(async () => {
     expect(await migrate()).toContain('applied 0001_init.sql');
     expect(await migrate()).toContain('no migrations to apply');

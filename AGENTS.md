@@ -4,6 +4,21 @@ ACT-R memory models. TypeScript implementation of ACT-R declarative memory (acti
 
 Review-time rules: see `CODING_STANDARDS.md` — comments describe actual behavior, no unscoped devDeps in workspaces.
 
+## Factory: waiting for the board
+
+The watcher (`.factory/scripts/watcher.mjs`) owns the board. Never run it, stop it, or
+replace it with manual polling from the main thread. When you must wait for a board event,
+plant `.factory/scripts/monitor.mjs` as one background job and block on it:
+
+```
+node .factory/scripts/monitor.mjs &   # exits 0 with GATE/BLOCK/PR EVENT when a person is needed
+wait $!
+```
+
+Never `sleep N && check` in a loop — that pattern burned ~40 h of the 2026-11-17 factory
+run and tripped the tool-call-loop detector 6 times. One monitor, one `wait`, act on the
+single event it prints.
+
 ## Agent skills
 
 ### Issue tracker
