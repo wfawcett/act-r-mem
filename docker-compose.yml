@@ -1,3 +1,8 @@
+# Pinned project name: without it compose derives the project from the working
+# directory (repo root -> "act-r-mem", a factory worktree -> "<n>_default"), so
+# down/exec from a worktree hits a different container on 5433.
+name: act-r-mem
+
 services:
   db:
     image: pgvector/pgvector:pg17

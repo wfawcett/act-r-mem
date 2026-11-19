@@ -23,6 +23,13 @@ const VALUES = {
 const DbIntegration = process.env.DATABASE_URL ? describe : describe.skip;
 DbIntegration('db integration', () => {
   beforeAll(async () => {
+    // Hermetic reset: drop all app objects + the migration bookkeeping, so the
+    // assertions below hold no matter what ran against this database before.
+    // Tables first, then the enum type 0001 creates (DROP TABLE does not drop it).
+    await pool.query(`
+      DROP TABLE IF EXISTS recall_trace, ingest_queue, sessions, edges, nodes, schema_migrations CASCADE;
+      DROP TYPE IF EXISTS node_kind
+    `);
     expect(await migrate()).toContain('applied 0001_init.sql');
     expect(await migrate()).toContain('no migrations to apply');
   });
