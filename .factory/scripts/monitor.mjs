@@ -47,6 +47,7 @@ function openPr() {
 }
 
 const deadline = Date.now() + timeoutMin * 60_000;
+let failures = 0;
 for (let i = 0; Date.now() < deadline; i++) {
   try {
     const list = boardState();
@@ -69,9 +70,19 @@ for (let i = 0; Date.now() < deadline; i++) {
       process.exit(0);
     }
   } catch (e) {
+    // Rate-limit windows (GitHub secondary caps) killed every monitor during
+    // the overnight run. Back off and keep watching; only an unreadable board
+    // for three consecutive polls is fatal.
     console.error(`monitor: poll failed: ${e.message}`);
-    process.exit(1);
+    failures++;
+    if (failures >= 3) {
+      console.error("monitor: three consecutive poll failures, giving up");
+      process.exit(1);
+    }
+    execFileSync("sleep", [String(Math.min(interval * failures, 600))]);
+    continue;
   }
+  failures = 0;
   const left = Math.min(interval, Math.ceil((deadline - Date.now()) / 1000));
   if (left <= 0) break;
   execFileSync("sleep", [String(left)]);
