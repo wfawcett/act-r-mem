@@ -17,6 +17,7 @@ DONE: Add `apps/service/src/reinforce/index.ts` — `attachUseBuffer(app, opts)`
 6. Add `apps/service/test/reinforce.integration.test.ts` — vitest against the test-profile DB (pattern of `test/db.integration.test.ts`: migrate fresh, seed node + trace with flows via SQL); inject a fixed `now` and a zero/1ms interval; cover (a) dormant vs non-dormant node bumps incl. `+reviveExtraAccesses`, (b) trace path edges strengthened + `last_used_at` set once per edge per flush even with duplicate `(trace_id, node_id)`, (c) no-traceId use bumps node only, (d) `used_ids` appended, (e) `forgetNode`/`restoreNode` invalid_at flip, (f) SIGTERM child-process flush, (g) un-flushed uses stay pending.
 DONE: Add `apps/service/test/reinforce.integration.test.ts` — vitest against the test-profile DB (pattern of `test/db.integration.test.ts`: migrate fresh, seed node + trace with flows via SQL); inject a fixed `now` and a zero/1ms interval; cover (a) dormant vs non-dormant node bumps incl. `+reviveExtraAccesses`, (b) trace path edges strengthened + `last_used_at` set once per edge per flush even with duplicate `(trace_id, node_id)`, (c) no-traceId use bumps node only, (d) `used_ids` appended, (e) `forgetNode`/`restoreNode` invalid_at flip, (f) SIGTERM child-process flush, (g) un-flushed uses stay pending.
 7. Verify with `pnpm --filter @recall/service test` (do not execute here; no implementation in this stage).
+DONE: Verify with `pnpm --filter @recall/service test` — full suite green (61+ tests passed, 0 failed).
 
 ## 2. Types and interfaces
 
