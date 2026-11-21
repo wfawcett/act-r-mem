@@ -14,6 +14,7 @@ DONE: Create `apps/service/src/mcp/server.ts` — factory `createMcpServer(deps,
 4. Create `apps/service/src/mcp/register.ts` — export `registerMcp(app, deps)`; mount `StreamableHTTPServerTransport` in stateful mode at `POST /mcp` (`mcp-session-id` header per SDK), resolve the client name from the initialize request's `clientInfo.name`, require `Authorization: Bearer <token>` when `config.recallToken` is set (401 otherwise), and log tool dispatch with the Fastify request id.
    DONE: Create `apps/service/src/mcp/register.ts` — export `registerMcp(app, deps)`; mount `StreamableHTTPServerTransport` stateful at `POST /mcp`, clientInfo.name override, recallToken bearer gate, request-id logging.
 5. Wire it in `apps/service/src/routes/ingest.ts` (`buildApp`) — call `registerMcp(app, { config: opts.config })` after the existing routes; keep E10 hook routes out.
+DONE: Wire it in `apps/service/src/routes/ingest.ts` (`buildApp`) — call `registerMcp(app, { config: opts.config })` after the existing routes; keep E10 hook routes out.
 6. Add `apps/service/test/mcp.integration.test.ts` — SDK `Client` + `StreamableHTTPClientTransport` against the compose test Postgres (migrations via `db/migrate.mjs`, same pattern as `recall.integration.test.ts`): list tools (exact §8 descriptions), drive all five tools, the error paths (empty text, unknown id get/forget, oversized ids > 50), the internal-error message, and the transport-client-name override.
 7. Add the new test file to the `test:integration` script in `apps/service/package.json`.
 
