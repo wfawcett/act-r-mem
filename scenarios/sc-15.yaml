@@ -1,0 +1,15 @@
+# SC-15 — Pruning and cap (§15.3 SC-15). The 50,000-node graph comes from the
+# `setup` fixture hook (packages/replay/test/fixtures/sc-15-seed.ts, task 10);
+# the recall must complete expanding at most maxExpanded (2000) nodes — that is
+# asserted by the replay test against the trace. Here the hub itself stays
+# active and reachable as a cue.
+name: sc-15-pruning-and-cap
+setup: sc-15-seed
+nodes:
+  - { key: hub, kind: entity, label: Hub, accesses: [0], created: 0 }
+steps:
+  - at: 1
+    recall: { cues: [hub] }
+    expect:
+      node:
+        - { key: hub, active: true }

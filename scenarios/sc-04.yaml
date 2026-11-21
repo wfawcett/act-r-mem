@@ -1,0 +1,13 @@
+# SC-04 — Dormant fact, broad question (§15.3 SC-04). Same dormant fact as
+# SC-03, but the declared similarity is 0.5, below directMinSim (0.8), so it is
+# returned in no lane.
+name: sc-04-dormant-fact-broad
+nodes:
+  - { key: favorite color is blue, kind: fact, label: favorite color is blue, accesses: [0], created: 0 }
+steps:
+  - at: 210
+    recall: { query: "what do I like?", similar: { "favorite color is blue": 0.5 } }
+    expect:
+      none_of: ["favorite color is blue"]
+      node:
+        - { key: "favorite color is blue", dormant: true }

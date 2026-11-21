@@ -1,0 +1,121 @@
+# SC-07 — Fan effect (§15.3 SC-07). Both cues are recalled together with equal
+# weights: the target hanging off the 2-edge cue receives 0.7/2 ≈ 0.342 of
+# spread, while the target hanging off the 50-edge cue receives 0.7/50 ≈ 0.014,
+# which stays under minSpread (0.02). Same B for both targets (single access),
+# so the associative ordering is purely spread-driven.
+name: sc-07-fan-effect
+nodes:
+  - { key: t1, kind: entity, label: Target of small fan, accesses: [0], created: 0 }
+  - { key: x1, kind: entity, label: Small-fan sibling, accesses: [0], created: 0 }
+  - { key: c1, kind: entity, label: Two-edge cue, accesses: [0], created: 0 }
+  - { key: t2, kind: entity, label: Target of big fan, accesses: [0], created: 0 }
+  - { key: f01, kind: entity, label: Filler 1, created: 0 }
+  - { key: f02, kind: entity, label: Filler 2, created: 0 }
+  - { key: f03, kind: entity, label: Filler 3, created: 0 }
+  - { key: f04, kind: entity, label: Filler 4, created: 0 }
+  - { key: f05, kind: entity, label: Filler 5, created: 0 }
+  - { key: f06, kind: entity, label: Filler 6, created: 0 }
+  - { key: f07, kind: entity, label: Filler 7, created: 0 }
+  - { key: f08, kind: entity, label: Filler 8, created: 0 }
+  - { key: f09, kind: entity, label: Filler 9, created: 0 }
+  - { key: f10, kind: entity, label: Filler 10, created: 0 }
+  - { key: f11, kind: entity, label: Filler 11, created: 0 }
+  - { key: f12, kind: entity, label: Filler 12, created: 0 }
+  - { key: f13, kind: entity, label: Filler 13, created: 0 }
+  - { key: f14, kind: entity, label: Filler 14, created: 0 }
+  - { key: f15, kind: entity, label: Filler 15, created: 0 }
+  - { key: f16, kind: entity, label: Filler 16, created: 0 }
+  - { key: f17, kind: entity, label: Filler 17, created: 0 }
+  - { key: f18, kind: entity, label: Filler 18, created: 0 }
+  - { key: f19, kind: entity, label: Filler 19, created: 0 }
+  - { key: f20, kind: entity, label: Filler 20, created: 0 }
+  - { key: f21, kind: entity, label: Filler 21, created: 0 }
+  - { key: f22, kind: entity, label: Filler 22, created: 0 }
+  - { key: f23, kind: entity, label: Filler 23, created: 0 }
+  - { key: f24, kind: entity, label: Filler 24, created: 0 }
+  - { key: f25, kind: entity, label: Filler 25, created: 0 }
+  - { key: f26, kind: entity, label: Filler 26, created: 0 }
+  - { key: f27, kind: entity, label: Filler 27, created: 0 }
+  - { key: f28, kind: entity, label: Filler 28, created: 0 }
+  - { key: f29, kind: entity, label: Filler 29, created: 0 }
+  - { key: f30, kind: entity, label: Filler 30, created: 0 }
+  - { key: f31, kind: entity, label: Filler 31, created: 0 }
+  - { key: f32, kind: entity, label: Filler 32, created: 0 }
+  - { key: f33, kind: entity, label: Filler 33, created: 0 }
+  - { key: f34, kind: entity, label: Filler 34, created: 0 }
+  - { key: f35, kind: entity, label: Filler 35, created: 0 }
+  - { key: f36, kind: entity, label: Filler 36, created: 0 }
+  - { key: f37, kind: entity, label: Filler 37, created: 0 }
+  - { key: f38, kind: entity, label: Filler 38, created: 0 }
+  - { key: f39, kind: entity, label: Filler 39, created: 0 }
+  - { key: f40, kind: entity, label: Filler 40, created: 0 }
+  - { key: f41, kind: entity, label: Filler 41, created: 0 }
+  - { key: f42, kind: entity, label: Filler 42, created: 0 }
+  - { key: f43, kind: entity, label: Filler 43, created: 0 }
+  - { key: f44, kind: entity, label: Filler 44, created: 0 }
+  - { key: f45, kind: entity, label: Filler 45, created: 0 }
+  - { key: f46, kind: entity, label: Filler 46, created: 0 }
+  - { key: f47, kind: entity, label: Filler 47, created: 0 }
+  - { key: f48, kind: entity, label: Filler 48, created: 0 }
+  - { key: f49, kind: entity, label: Filler 49, created: 0 }
+  - { key: c2, kind: entity, label: Fifty-edge cue, accesses: [0], created: 0 }
+edges:
+  - { from: c1, to: t1, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c1, to: x1, predicate: linked, strength: 0.1, lastUsed: 0 }
+  - { from: c2, to: t2, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f01, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f02, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f03, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f04, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f05, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f06, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f07, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f08, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f09, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f10, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f11, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f12, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f13, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f14, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f15, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f16, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f17, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f18, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f19, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f20, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f21, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f22, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f23, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f24, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f25, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f26, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f27, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f28, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f29, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f30, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f31, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f32, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f33, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f34, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f35, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f36, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f37, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f38, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f39, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f40, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f41, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f42, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f43, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f44, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f45, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f46, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f47, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f48, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: c2, to: f49, predicate: linked, strength: 1, lastUsed: 0 }
+steps:
+  - at: 1
+    recall: { cues: [c1, c2] }
+    expect:
+      associative_top: [t1]
+      associative_includes: [t1]
+      associative_excludes: [t2]

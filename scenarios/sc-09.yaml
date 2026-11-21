@@ -1,0 +1,29 @@
+# SC-09 — Use reinforces node and path (§15.3 SC-09). After recall then `use`
+# of the target: the target's B rises (fresh access at now: B = ln 11 ≈ 2.398),
+# both edges on its path from the cue get stronger (stored 0.5 → 0.59086), and
+# the off-path edge is unchanged. hops is 2 here so the backward path walk sees
+# exactly the cue→mid→target chain.
+name: sc-09-use-reinforces-path
+params:
+  hops: 2
+nodes:
+  - { key: cue, kind: entity, label: Cue, accesses: [0], created: 0 }
+  - { key: mid, kind: entity, label: Mid, accesses: [0], created: 0 }
+  - { key: target, kind: entity, label: Target, accesses: [0], created: 0 }
+  - { key: aside, kind: entity, label: Aside, accesses: [0], created: 0 }
+edges:
+  - { from: cue, to: mid, predicate: p1, strength: 0.5, lastUsed: 0 }
+  - { from: mid, to: target, predicate: p2, strength: 0.5, lastUsed: 0 }
+  - { from: cue, to: aside, predicate: p3, strength: 0.5, lastUsed: 0 }
+steps:
+  - at: 1
+    recall: { cues: [cue] }
+    use: [target]
+    expect:
+      node:
+        - { key: target, active: true, B_gt: 2.3 }
+        - { key: aside, B_gt: -0.001, B_lt: 0.001 }
+      edge:
+        - { from: cue, to: mid, strength_gt: 0.58, strength_lt: 0.60 }
+        - { from: mid, to: target, strength_gt: 0.58, strength_lt: 0.60 }
+        - { from: cue, to: aside, strength_gt: 0.499, strength_lt: 0.501 }
