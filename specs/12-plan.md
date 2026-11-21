@@ -6,7 +6,7 @@ Spec: `specs/12-e03-replay-harness-and-scenario-suite.md`. Existing code: `packa
 
 1. Create `packages/replay/package.json` (`@recall/replay`, `"type":"module"`, deps `yaml`, `zod`, `@recall/activation` `workspace:*`; devDep `vitest`; script `test: vitest run`).
    DONE: Create packages/replay/package.json (@recall/replay, type module, deps yaml/zod/@recall/activation workspace:*, devDep vitest, script test: vitest run)
-   DONE: Add root script "replay": "pnpm --filter @recall/replay test" to package.json
+2. Add root script `"replay": "pnpm --filter @recall/replay test"` to `package.json` (workspace globs already cover `packages/*`).
    DONE: Add root script "replay": "pnpm --filter @recall/replay test" to package.json
 3. Write `packages/replay/src/types.ts` — zod schemas + inferred types for the §15.2 scenario YAML, `Expectations`, and the §7 `recall_trace`-shaped trace record.
 4. Write `packages/replay/src/params.ts` — `defaultParams()` reading `config/params.json`, validating with `ParamSchema` from `apps/service/src/config.ts`; shallow merge scenario `params` over it.
