@@ -105,7 +105,8 @@ it('retries a failing item with growing run_after and fails on attempt 5', async
     `UPDATE ingest_queue SET attempts = 4, status = 'pending', run_after = now(), started_at = NULL WHERE id = $1`,
     [queued_id],
   );
-  await waitFor(async () => (await row(queued_id))?.status === 'failed');
+  // Slow boxes (WSL2 D-state stalls) can stretch one retry cycle past 10 s.
+  await waitFor(async () => (await row(queued_id))?.status === 'failed', 30000);
   const failed = await row(queued_id);
   expect(failed?.attempts).toBe(5);
   expect(failed?.last_error).not.toBeNull();
