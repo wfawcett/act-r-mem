@@ -9,9 +9,9 @@ import path from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import type { PoolClient } from 'pg';
 
-// Worker polls on a 1 s interval and the kill test boots child processes; the
-// default 5 s test timeout is too tight for the integration paths here.
-vi.setConfig({ testTimeout: 30000 });
+// Worker polls on a 1 s interval and the kill test boots child processes
+// (build + two full entrypoint boots); the default is far too tight here.
+vi.setConfig({ testTimeout: 60000 });
 
 import { enqueueRemember, enqueueTranscript } from '../src/ingest/enqueue.js';
 import { startWorker, type WorkerHandle } from '../src/ingest/worker.js';
@@ -32,6 +32,10 @@ process.env.DATABASE_URL = DATABASE_URL;
 // pool.ts reads DATABASE_URL at import time — import after setting it.
 const { pool } = await import('../src/db/pool.js');
 execFileSync('node', [MIGRATE], { encoding: 'utf8' });
+// Leftover rows from a previous crashed run (e.g. a killed child worker) sit in
+// ingest_queue and get claimed by this run's workers, desyncing the queued stub
+// responses. Clear them once before the suite starts.
+await pool.query(`TRUNCATE ingest_queue`);
 
 process.chdir('../..'); // loadConfig reads config/params.json from cwd
 const baseConfig = loadConfig({
@@ -527,38 +531,53 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
       }
     };
     const exitOf = (child: ReturnType<typeof spawn>) =>
-      new Promise<number | null>((resolve) => child.on('exit', (code) => resolve(code)));
-
-    // Enqueue, boot the child, and kill it hard mid-processing window.
-    queueExtract({
-      episodes: [],
-      entities: [{ key: 'alice', label: 'Alice', aliases: [] }],
-      facts: [],
-      edges: [],
-    });
-    const killed = await enqueueRemember({ text: 'Alice owns the deploy pipeline' });
-    const child = spawnChild();
-    await waitForUp(child);
-    child.kill('SIGKILL');
-    expect(await exitOf(child)).not.toBe(0);
-
-    // While the child is down, enqueue an item that must never be claimed by
-    // the dead worker and completes only after the restart.
-    queueExtract({ episodes: [], entities: [], facts: [], edges: [] });
-    const empty = await enqueueRemember({ text: 'nothing worth keeping here' });
-
-    // Restart responses: the killed item needs a fresh extraction, the empty
-    // item needs its '{}' response.
-    queueExtract({
-      episodes: [],
-      entities: [{ key: 'alice', label: 'Alice', aliases: [] }],
-      facts: [],
-      edges: [],
-    });
-    queueExtract({ episodes: [], entities: [], facts: [], edges: [] });
-
-    const child2 = spawnChild();
+      new Promise<number | null>((resolve) => {
+        if (child.exitCode !== null) return resolve(child.exitCode);
+        child.on('exit', (code) => resolve(code));
+      });
+    // A leaked child keeps polling the shared test-db and breaks every later
+    // run; kill both children no matter how the test fails or times out.
+    let child: ReturnType<typeof spawn>;
+    let child2: ReturnType<typeof spawn>;
     try {
+      // Enqueue, boot the child, and kill it hard mid-processing window.
+      queueExtract({
+        episodes: [],
+        entities: [{ key: 'alice', label: 'Alice', aliases: [] }],
+        facts: [],
+        edges: [],
+      });
+      const killed = await enqueueRemember({ text: 'Alice owns the deploy pipeline' });
+      child = spawnChild();
+      await waitForUp(child);
+      // Deterministic "mid-processing": wait for the worker to claim the item
+      // before killing, so the kill cannot race ahead of the first poll.
+      await waitFor(async () => (await queueRow(killed.queued_id))?.status === 'processing');
+      child.kill('SIGKILL');
+      expect(await exitOf(child)).not.toBe(0);
+      // Simulate the >10 min stuck window: the restart's startup sweep then
+      // requeues the processing item exactly as it would after 10 real minutes.
+      await pool.query(
+        `UPDATE ingest_queue SET started_at = now() - interval '11 minutes' WHERE id = $1 AND status = 'processing'`,
+        [killed.queued_id],
+      );
+
+      // While the child is down, enqueue an item that must never be claimed by
+      // the dead worker and completes only after the restart.
+      queueExtract({ episodes: [], entities: [], facts: [], edges: [] });
+      const empty = await enqueueRemember({ text: 'nothing worth keeping here' });
+
+      // Restart responses: the killed item needs a fresh extraction, the empty
+      // item needs its '{}' response.
+      queueExtract({
+        episodes: [],
+        entities: [{ key: 'alice', label: 'Alice', aliases: [] }],
+        facts: [],
+        edges: [],
+      });
+      queueExtract({ episodes: [], entities: [], facts: [], edges: [] });
+
+      child2 = spawnChild();
       await waitForUp(child2);
       await waitFor(async () => {
         const [a, b] = await Promise.all([queueRow(killed.queued_id), queueRow(empty.queued_id)]);
@@ -568,7 +587,8 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
       child2.kill('SIGTERM');
       expect(await exitOf(child2)).toBe(0);
     } finally {
-      if (child2.exitCode === null) child2.kill('SIGKILL');
+      if (child !== undefined && child.exitCode === null) child.kill('SIGKILL');
+      if (child2 !== undefined && child2.exitCode === null) child2.kill('SIGKILL');
     }
   });
 });
