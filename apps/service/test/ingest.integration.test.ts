@@ -543,7 +543,6 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
     // observed mid-processing (a fast pipeline could finish before the first
     // DB poll and never be seen as 'processing').
     stub.state.delayMs = 1200;
-    child = spawnChild();
     try {
       // Enqueue, boot the child, and kill it hard mid-processing window.
       queueExtract({
