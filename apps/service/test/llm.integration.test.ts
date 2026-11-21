@@ -145,6 +145,8 @@ function makeConfig(url: string): Config {
     embedModel: 'embed-3',
     embedDim: DIM,
     extractModel: 'claude-3-haiku',
+    extractWindowChars: 6000,
+    workerConcurrency: 2,
     allowRemoteModels: false,
     prefetchTtlSeconds: 600,
     contextMaxChars: 4000,
