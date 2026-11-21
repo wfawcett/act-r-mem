@@ -30,11 +30,11 @@ export async function startStub(dim: number): Promise<StubHandle> {
     try {
       const parsed = method === 'POST' ? JSON.parse(body) : undefined;
 
-      if (url.endsWith('/embeddings')) {
+      if (path.endsWith('/embeddings')) {
         const vector = new Array<number>(dim).fill(0.5);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ data: [{ embedding: vector }] }));
-      } else if (url.endsWith('/chat/completions')) {
+      } else if (path.endsWith('/chat/completions')) {
         if (parsed?.messages && parsed.messages.length > 0) {
           if (state.responses.length > 0) {
             const queued = state.responses.shift()!;
@@ -56,8 +56,8 @@ export async function startStub(dim: number): Promise<StubHandle> {
       }
 
       // Log request
-      handle.state.chatLog.push({
-        path: url,
+      state.chatLog.push({
+        path,
         method,
         body,
       });
