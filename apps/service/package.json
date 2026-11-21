@@ -11,6 +11,7 @@
     "test:integration": "vitest run --no-file-parallelism test/db.integration.test.ts test/recall.integration.test.ts test/ingest.integration.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@recall/activation": "workspace:*",
     "fastify": "^5.12.8",
     "pg": "^8.23.1",
