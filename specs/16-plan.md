@@ -133,3 +133,5 @@ pnpm --filter @recall/service add fastify
 ```
 
 Already satisfied: `pg` (pool, claims, vector literals), `zod` (validation, reuse of `ExtractionSchema`), `vitest` (workspace root). No new packages for pgvector (string-literal casting), stub server (`node:http`), or child-process kill test (`node:child_process`).
+
+DONE: Add apps/service/test/ingest.integration.test.ts — full integration suite (FR-01/02, FR-05, FR-06/07, FR-08, FR-09, FR-10, FR-23, §11.5, SKIP LOCKED, retry/backoff + attempt-5 failure, stuck requeue, graceful stop, NFR-11 corpus, kill-mid-ingest restart incl. never-claimed empty item); 16/16 pass against test-db + stub.
