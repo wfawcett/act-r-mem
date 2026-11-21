@@ -7,11 +7,17 @@ export interface StubHandle {
     chatLog: any[];
     responses: string[];
   };
+  close(): Promise<void>;
 }
 
 /** Create a stub server that returns fixed-dim embeddings and queued chat responses. */
 export async function startStub(dim: number): Promise<StubHandle> {
   const port = Math.floor(Math.random() * 10000) + 10000; // random port in 10000-19999
+  const state = {
+    embeddings: new Array<number>(dim).fill(0.5),
+    chatLog: [] as any[],
+    responses: [] as string[],
+  };
   const server = createServer(async (req, res) => {
     const { method, url, headers } = req;
     const body = await new Promise<string>((resolve) => {
@@ -19,6 +25,7 @@ export async function startStub(dim: number): Promise<StubHandle> {
       req.on('data', (chunk) => (buf += chunk));
       req.on('end', () => resolve(buf));
     });
+    const path = url ?? '';
 
     try {
       const parsed = method === 'POST' ? JSON.parse(body) : undefined;
@@ -29,8 +36,8 @@ export async function startStub(dim: number): Promise<StubHandle> {
         res.end(JSON.stringify({ data: [{ embedding: vector }] }));
       } else if (url.endsWith('/chat/completions')) {
         if (parsed?.messages && parsed.messages.length > 0) {
-          if (handle.state.responses.length > 0) {
-            const queued = handle.state.responses.shift()!;
+          if (state.responses.length > 0) {
+            const queued = state.responses.shift()!;
             const respBody = JSON.parse(queued);
             const content = respBody.choices?.[0]?.message?.content ?? '';
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -61,28 +68,16 @@ export async function startStub(dim: number): Promise<StubHandle> {
     }
   });
 
-  const listener = server.listen(port, 'localhost', () => {
-    const address = server.address();
-    if (typeof address === 'string') {
-      // This shouldn't happen
-      console.error('Server listening on unknown address');
-    } else {
-      const host = address.address;
-      const port = address.port;
-      console.log(`Stub server listening at http://${host}:${port}`);
-    }
+  server.listen(port, 'localhost');
+  await new Promise<void>((resolve, reject) => {
+    server.once('listening', () => resolve());
+    server.once('error', reject);
   });
 
-  // Wait a bit for the port to be assigned (especially on some systems)
-  await new Promise((resolve) => setTimeout(resolve, 10));
-
   return {
-    url: `http://localhost:${listener.server.address().port}`,
-    state: {
-      embeddings: new Array<number>(dim).fill(0.5),
-      chatLog: [],
-      responses: [],
-    },
+    url: `http://localhost:${(server.address() as { port: number }).port}`,
+    state,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }
 

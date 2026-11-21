@@ -134,6 +134,8 @@ export async function resolveEntities(
         const existing = keyRows.rows[0];
         if (existing === undefined) throw new Error(`resolveEntities: node ${nodeId} disappeared`);
         if (existing.label_norm !== norm) await addAlias(db, nodeId, norm);
+        // FR-07: a similarity match is still a match — record one access.
+        await recordAccess(db, nodeId, at);
       } else {
         // New entity: created with one access at the item's `created_at`.
         const inserted = await db.query<{ id: string | number }>(
