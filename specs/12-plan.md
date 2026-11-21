@@ -23,7 +23,6 @@ Spec: `specs/12-e03-replay-harness-and-scenario-suite.md`. Existing code: `packa
 9. Write `scenarios/sc-01.yaml`..`sc-15.yaml` — one per PRD §15.3 row; SC-01 = exact §15.2 example graph; SC-02 = 40-episode fan enumerated in YAML; SC-13 = tail approximation asserted with `node: {B_gt, B_lt}` bounds; SC-15 = 50k-node scale scenario using the `setup` fixture hook.
    DONE: Write scenarios/sc-01.yaml..sc-15.yaml — one per PRD §15.3 row (SC-01 = §15.2 example graph with epoch shifted +365d to nonnegative offsets; SC-02 40-episode fan enumerated; SC-13 tail bounds B_gt/B_lt = exact B ± 0.1; SC-15 setup fixture hook; all 15 verified passing via runScenario scratch run)
 10. Write `packages/replay/test/fixtures/sc-15-seed.ts` — programmatic generator for the 50k-node SC-15 setup (only fixture hook).
-   DONE: Write packages/replay/test/fixtures/sc-15-seed.ts — programmatic generator for the 50k-node SC-15 setup (only fixture hook)
    DONE: Write packages/replay/test/fixtures/sc-15-seed.ts (programmatic generator for the 50k-node SC-15 setup, only fixture hook; verified via runScenario scratch run: passed, expanded=2000 at the maxExpanded cap)
 11. Write `packages/replay/test/replay.test.ts` — glob every `scenarios/*.yaml`, assert SC-01..SC-15 present exactly once, run each, write `out/traces/<scenario>/<step>.json`, assert pass and `expanded <= maxExpanded`.
 12. Write `packages/replay/test/determinism.test.ts` — run the suite twice into two temp dirs, assert byte-identical files.
