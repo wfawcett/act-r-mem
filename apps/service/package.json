@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:integration": "vitest run test/db.integration.test.ts"
+    "test:integration": "vitest run --no-file-parallelism test/db.integration.test.ts test/recall.integration.test.ts"
   },
   "dependencies": {
     "@recall/activation": "workspace:*",
