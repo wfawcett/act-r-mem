@@ -1,11 +1,12 @@
 import { afterAll, expect, it } from 'vitest';
-import { pool } from '../src/db/pool.js';
-import { processItem, type QueueItem } from '../src/ingest/process.js';
-import { createClient } from '../src/llm/client.js';
 import { startStub } from './stub-litellm.js';
-import { setEffectiveParams, loadConfig } from '../src/config.js';
 
 process.env.DATABASE_URL = 'postgres://recall:recall@localhost:5433/recall_test';
+// pool.ts reads DATABASE_URL at import time — import src modules after setting it.
+const { pool } = await import('../src/db/pool.js');
+const { processItem } = await import('../src/ingest/process.js');
+const { createClient } = await import('../src/llm/client.js');
+const { setEffectiveParams, loadConfig } = await import('../src/config.js');
 
 const extraction = {
   episodes: [{ key: 'ep', label: 'standup', summary: 'Alice and Bob discussed the deploy', occurred_at: '2026-01-02T10:00:00Z' }],

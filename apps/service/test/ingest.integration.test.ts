@@ -13,9 +13,7 @@ import type { PoolClient } from 'pg';
 // (build + two full entrypoint boots); the default is far too tight here.
 vi.setConfig({ testTimeout: 60000 });
 
-import { enqueueRemember, enqueueTranscript } from '../src/ingest/enqueue.js';
-import { startWorker, type WorkerHandle } from '../src/ingest/worker.js';
-import { loadConfig, setEffectiveParams } from '../src/config.js';
+import type { WorkerHandle } from '../src/ingest/worker.js';
 import { startStub } from './stub-litellm.js';
 
 const MIGRATE = path.resolve(process.cwd(), '..', '..', 'db', 'migrate.mjs');
@@ -29,8 +27,12 @@ const queueJudge = (answer: 'yes' | 'no') =>
 const chatCalls = () => stub.state.chatLog.filter((c) => c.path.endsWith('/chat/completions')).length;
 
 process.env.DATABASE_URL = DATABASE_URL;
-// pool.ts reads DATABASE_URL at import time — import after setting it.
+// pool.ts reads DATABASE_URL at import time — src modules that pull in pool.ts
+// (enqueue, worker) must be imported after setting it, never hoisted statically.
 const { pool } = await import('../src/db/pool.js');
+const { enqueueRemember, enqueueTranscript } = await import('../src/ingest/enqueue.js');
+const { startWorker } = await import('../src/ingest/worker.js');
+const { loadConfig, setEffectiveParams } = await import('../src/config.js');
 execFileSync('node', [MIGRATE], { encoding: 'utf8' });
 // Leftover rows from a previous crashed run (e.g. a killed child worker) sit in
 // ingest_queue and get claimed by this run's workers, desyncing the queued stub
