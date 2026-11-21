@@ -1,0 +1,21 @@
+# SC-14 — Determinism (§15.3 SC-14). A recall + use + re-recall pipeline over a
+# small graph; the full suite must produce byte-identical trace files across
+# runs (verified by the replay determinism test and the diff-rerun gate).
+name: sc-14-determinism
+nodes:
+  - { key: cue, kind: entity, label: Cue, accesses: [0], created: 0 }
+  - { key: mid, kind: entity, label: Mid, accesses: [0], created: 0 }
+  - { key: target, kind: entity, label: Target, accesses: [0], created: 0 }
+edges:
+  - { from: cue, to: mid, predicate: p1, strength: 0.5, lastUsed: 0 }
+  - { from: mid, to: target, predicate: p2, strength: 0.5, lastUsed: 0 }
+steps:
+  - at: 1
+    recall: { cues: [cue], session_id: det, client: omp }
+    use: [target]
+  - at: 2
+    recall: { cues: [cue], session_id: det, client: omp }
+    expect:
+      associative_includes: [mid, target]
+      node:
+        - { key: target, active: true }

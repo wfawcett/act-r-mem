@@ -1,0 +1,13 @@
+# SC-06 — Frequency (§15.3 SC-06). At +60 days a node with 10 accesses has a
+# higher base level (B ≈ 0.255, active) than a node with 1 access at the same
+# last-access time (B ≈ -2.047, dormant).
+name: sc-06-frequency
+nodes:
+  - { key: often, kind: entity, label: Often-used note, accesses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], created: 0 }
+  - { key: once, kind: entity, label: Once-used note, accesses: [0], created: 0 }
+steps:
+  - at: 60
+    expect:
+      node:
+        - { key: often, active: true, B_gt: 0.25 }
+        - { key: once, dormant: true, B_lt: -2.0 }

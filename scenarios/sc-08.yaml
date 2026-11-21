@@ -1,0 +1,36 @@
+# SC-08 — Recall does not reinforce (§15.3 SC-08). Twenty recalls of the same
+# cue leave every B and every edge strength unchanged: the flush only runs on
+# `use`. B = ln(1) = 0 exactly; the stored edge strength stays at 0.5 (decay is
+# computed on read and only `use` writes strength).
+name: sc-08-recall-no-reinforce
+nodes:
+  - { key: cue, kind: entity, label: Cue, accesses: [0], created: 0 }
+  - { key: note, kind: entity, label: Note, accesses: [0], created: 0 }
+edges:
+  - { from: cue, to: note, predicate: linked, strength: 0.5, lastUsed: 0 }
+steps:
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - { at: 1, recall: { cues: [cue] } }
+  - at: 1
+    recall: { cues: [cue] }
+    expect:
+      node:
+        - { key: note, B_gt: -0.001, B_lt: 0.001 }
+      edge:
+        - { from: cue, to: note, strength_gt: 0.499, strength_lt: 0.501 }

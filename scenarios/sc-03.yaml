@@ -1,0 +1,15 @@
+# SC-03 — Dormant fact, specific question (§15.3 SC-03). "Favorite color is
+# blue" was last accessed 210 days ago (P ≈ 0.008, dormant) and is returned in
+# the direct lane when the declared query similarity is 0.9 (≥ directMinSim).
+# The fact node is deliberately edge-free so its declared similarity can only
+# reach it through the direct lane.
+name: sc-03-dormant-fact-specific
+nodes:
+  - { key: favorite color is blue, kind: fact, label: favorite color is blue, accesses: [0], created: 0 }
+steps:
+  - at: 210
+    recall: { query: "what is my favorite color?", similar: { "favorite color is blue": 0.9 } }
+    expect:
+      direct_is: ["favorite color is blue"]
+      node:
+        - { key: "favorite color is blue", dormant: true }
