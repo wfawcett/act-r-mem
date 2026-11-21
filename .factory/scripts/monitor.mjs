@@ -34,7 +34,7 @@ const gh = (args) => execFileSync("gh", args, { encoding: "utf8" });
 
 function boardState() {
   const { items } = JSON.parse(
-    gh(["project", "item-list", String(board.project_number), "--owner", board.owner, "--format", "json", "--limit", "500"]),
+    gh(["project", "item-list", String(board.project_number), "--owner", board.owner, "--format", "json", "--limit", "50"]),
   );
   return items
     .filter((i) => i.content?.number)

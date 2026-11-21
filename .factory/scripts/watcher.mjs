@@ -42,7 +42,7 @@ const git = (cwd, args) => {
 function cards(config) {
   const { board } = config;
   const { items } = JSON.parse(
-    gh(["project", "item-list", String(board.project_number), "--owner", board.owner, "--format", "json", "--limit", "500"]),
+    gh(["project", "item-list", String(board.project_number), "--owner", board.owner, "--format", "json", "--limit", "50"]),
   );
   return items.filter((i) => i.content?.number).map((i) => ({
     number: i.content.number,
