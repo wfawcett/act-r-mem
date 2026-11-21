@@ -22,4 +22,5 @@ $ASSIGNMENT
 - Write the spec file path given in the assignment. Keep it under 60 lines.
 - Do not implement anything. Do not run git commands that change state.
 - Write every artifact path listed in the assignment. Miss one and the stage fails.
+- Write the result file exactly as the assignment's result path requires: `{"status":"done"}` on success, `{"status":"blocked","need":"<reason>"}` to hand back, `{"status":"failed","need":"<reason>"}` on failure. Only those three status values — never synonyms ("success", "ok", "complete", "completed"); the runner rejects them and the card gets blocked.
 </contract>

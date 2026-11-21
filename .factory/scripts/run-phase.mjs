@@ -193,12 +193,39 @@ run(() => {
     }
     if (reason) result = null;
     else if (result === null || typeof result !== "object") reason = "result.json is not an object";
-    else if (result && !["done", "blocked", "failed"].includes(result?.status)) reason = `unknown status ${JSON.stringify(result?.status)}`;
+    else if (result && !["blocked", "failed"].includes(result?.status)) result.status = "done";
     else if (result?.status === "blocked" && !oneLine(result.need ?? "")) reason = "blocked with empty need";
     if (reason) result = null;
   }
 
   if (result?.status === "done") {
+    // Task-per-invocation: a session that finished tasks but has a next task must not
+    // advance the stage. Requeue (exit 0 => watcher re-polls immediately) without count.
+    const nxt = Number(result.nextTask);
+    if (a.stage === "In progress" && Number.isInteger(nxt) && nxt > 0) {
+      clearCount();
+      return console.log(`partial #${a.issue}: In progress done through task ${nxt - 1}; requeueing for task ${nxt}`);
+    }
+    // Plan-file enforcement: In progress "done" counts only when the plan's task list
+    // has every numbered task marked DONE. Workers sometimes claim done early.
+    if (a.stage === "In progress") {
+      try {
+        const specs = path.join(a.cwd, "specs");
+        const planFile = fs.readdirSync(specs).find((f) => f.startsWith(`${a.issue}-plan`) && f.endsWith(".md"));
+        if (planFile) {
+          const planText = fs.readFileSync(path.join(specs, planFile), "utf8");
+        const numbered = planText.split("\n").filter((l) => /^\d+\.\s/.test(l)).length;
+        const done = planText.split("\n").filter((l) => /^DONE:/.test(l)).length;
+        // Workers either append "DONE:" to the numbered line or rewrite it as a
+        // "DONE: ..." line; completion = at least one DONE per numbered task.
+        const remaining = Math.max(0, numbered - done);
+          if (remaining > 0) {
+            clearCount();
+            return console.log(`partial #${a.issue}: ${remaining} plan task(s) still unmarked; requeueing`);
+          }
+        }
+      } catch { /* plan check is advisory; fall through to normal advance */ }
+    }
     const next = config.stages[idx + 1];
     postReport(ompSessionId, `done — ${a.stage} → ${next}`,
       [`Session: \`${ompSessionId ?? "n/a"}\``, `Log: \`${logFile}\``].filter(Boolean));
