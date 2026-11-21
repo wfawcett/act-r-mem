@@ -49,6 +49,8 @@ export interface Config {
   extractWindowChars: number;
   workerConcurrency: number;
   allowRemoteModels: boolean;
+  prefetchTtlSeconds: number;
+  contextMaxChars: number;
 }
 
 export class ConfigError extends Error {
@@ -195,6 +197,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     extractWindowChars: readInt(env, 'EXTRACT_WINDOW_CHARS', DEFAULTS.extractWindowChars),
     workerConcurrency: readInt(env, 'WORKER_CONCURRENCY', DEFAULTS.workerConcurrency),
     allowRemoteModels,
+    prefetchTtlSeconds: readInt(env, 'PREFETCH_TTL_SECONDS', 600),
+    contextMaxChars: readInt(env, 'CONTEXT_MAX_CHARS', 4000),
   };
 }
 

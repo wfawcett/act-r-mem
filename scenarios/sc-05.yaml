@@ -1,0 +1,15 @@
+# SC-05 — Decay of a single access (§15.3 SC-05). One access; P is above 0.9
+# one day later and the node is dormant 90 days after. Expectations speak in B:
+# P > 0.9 ⟺ B > τ + s·ln 9 = -0.231, and dormant ⟺ P < dormantP.
+name: sc-05-single-access-decay
+nodes:
+  - { key: note, kind: entity, label: Note, accesses: [0], created: 0 }
+steps:
+  - at: 1
+    expect:
+      node:
+        - { key: note, active: true, B_gt: -0.231 }
+  - at: 90
+    expect:
+      node:
+        - { key: note, dormant: true }

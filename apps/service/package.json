@@ -6,12 +6,11 @@
   "description": "Recall service: Fastify + MCP + worker (PRD §6)",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
     "test": "vitest run",
-    "test:integration": "vitest run test/db.integration.test.ts"
+    "test:integration": "vitest run --no-file-parallelism test/db.integration.test.ts test/recall.integration.test.ts"
   },
   "dependencies": {
-    "fastify": "^5.12.8",
+    "@recall/activation": "workspace:*",
     "pg": "^8.23.1",
     "zod": "^3.23.8"
   },

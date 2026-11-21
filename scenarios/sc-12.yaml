@@ -1,0 +1,31 @@
+# SC-12 — Superseded fact (§15.3 SC-12). "Favorite color is green" supersedes
+# "blue": blue is invalidated (excluded from every lane) and green is returned
+# by the direct lane. Both facts use the incidental half-life class so their
+# fact-links decay below minSpread by day 200 — green reaches recall only
+# through the direct lane (sim 0.9 ≥ directMinSim), never the associative lane.
+name: sc-12-superseded-fact
+nodes:
+  - { key: filler, kind: entity, label: Filler, accesses: [0], created: 0 }
+steps:
+  - at: 0
+    remember:
+      text: "I tell you my favorite color is blue"
+      structured:
+        facts:
+          - subject: me
+            statement: favorite color is blue
+            half_life_class: incidental
+  - at: 1
+    remember:
+      text: "I tell you my favorite color is green now"
+      structured:
+        facts:
+          - subject: me
+            statement: favorite color is green
+            half_life_class: incidental
+  - at: 200
+    recall: { query: "what is my favorite color?", similar: { "favorite color is green": 0.9 } }
+    expect:
+      direct_is: ["favorite color is green"]
+      associative_excludes: ["favorite color is green", "favorite color is blue"]
+      none_of: ["favorite color is blue"]

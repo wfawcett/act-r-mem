@@ -1,0 +1,24 @@
+# SC-11 — Edge floor (§15.3 SC-11). Both edges are unused for 5 years, so their
+# effective strength (computed on read) floors at exactly edgeFloor = 0.001 and
+# they are still traversed: 1.0 cue activation × 0.001 × 0.7 damping = 0.0007
+# per flow, above pruneEpsilon (0.0001) — the amounts are visible in the trace
+# hops under out/traces. Mid is recalled as an episode (kept fresh by cue2), so
+# Faded note returns through the exposure lane over its floored edge.
+# Expectations read stored edge strength (only `use` writes it), so the floor
+# itself is asserted through traversal, not the stored 1.0.
+name: sc-11-edge-floor
+nodes:
+  - { key: cue, kind: entity, label: Cue, accesses: [0], created: 0 }
+  - { key: cue2, kind: entity, label: Second cue, accesses: [0], created: 0 }
+  - { key: mid, kind: episode, label: Recent episode, accesses: [1815, 1816, 1817, 1818, 1819, 1820, 1821, 1822, 1823, 1824], created: 0 }
+  - { key: faded, kind: entity, label: Faded note, created: 0 }
+edges:
+  - { from: cue, to: mid, predicate: linked, strength: 1, lastUsed: 0 }
+  - { from: cue2, to: mid, predicate: linked, strength: 1, lastUsed: 1825 }
+  - { from: mid, to: faded, predicate: detail, strength: 1, lastUsed: 0 }
+steps:
+  - at: 1825
+    recall: { cues: [cue, cue2] }
+    expect:
+      associative_includes: [mid]
+      exposure_includes: [faded]

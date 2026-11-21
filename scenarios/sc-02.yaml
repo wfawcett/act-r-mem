@@ -1,0 +1,103 @@
+# SC-02 — Broad cue alone (§15.3 SC-02). Same graph as SC-01 plus 40 other
+# episodes linked to Thursday. Cueing Thursday alone splits its fan 41 ways, so
+# Thursday dinner stays under minSpread and Spaghetti is returned in no lane.
+name: sc-02-broad-cue-fan
+nodes:
+  - { key: todd, kind: entity, label: Todd, accesses: [363, 362.9, 356, 335], created: 115 }
+  - { key: italy, kind: entity, label: Italy, accesses: [363, 335, 304], created: 245 }
+  - { key: thursday, kind: entity, label: Thursday, accesses: [364, 363, 356, 349, 342, 335], created: 0 }
+  - { key: spaghetti, kind: entity, label: Spaghetti, accesses: [325, 270], created: 65 }
+  - { key: dinner, kind: episode, label: Thursday dinner, accesses: [363], created: 363 }
+  - { key: call, kind: episode, label: Call with Todd, accesses: [363], created: 363 }
+  - { key: ep01, kind: episode, label: Errand run 1, accesses: [363], created: 0 }
+  - { key: ep02, kind: episode, label: Errand run 2, accesses: [363], created: 0 }
+  - { key: ep03, kind: episode, label: Errand run 3, accesses: [363], created: 0 }
+  - { key: ep04, kind: episode, label: Errand run 4, accesses: [363], created: 0 }
+  - { key: ep05, kind: episode, label: Errand run 5, accesses: [363], created: 0 }
+  - { key: ep06, kind: episode, label: Errand run 6, accesses: [363], created: 0 }
+  - { key: ep07, kind: episode, label: Errand run 7, accesses: [363], created: 0 }
+  - { key: ep08, kind: episode, label: Errand run 8, accesses: [363], created: 0 }
+  - { key: ep09, kind: episode, label: Errand run 9, accesses: [363], created: 0 }
+  - { key: ep10, kind: episode, label: Errand run 10, accesses: [363], created: 0 }
+  - { key: ep11, kind: episode, label: Errand run 11, accesses: [363], created: 0 }
+  - { key: ep12, kind: episode, label: Errand run 12, accesses: [363], created: 0 }
+  - { key: ep13, kind: episode, label: Errand run 13, accesses: [363], created: 0 }
+  - { key: ep14, kind: episode, label: Errand run 14, accesses: [363], created: 0 }
+  - { key: ep15, kind: episode, label: Errand run 15, accesses: [363], created: 0 }
+  - { key: ep16, kind: episode, label: Errand run 16, accesses: [363], created: 0 }
+  - { key: ep17, kind: episode, label: Errand run 17, accesses: [363], created: 0 }
+  - { key: ep18, kind: episode, label: Errand run 18, accesses: [363], created: 0 }
+  - { key: ep19, kind: episode, label: Errand run 19, accesses: [363], created: 0 }
+  - { key: ep20, kind: episode, label: Errand run 20, accesses: [363], created: 0 }
+  - { key: ep21, kind: episode, label: Errand run 21, accesses: [363], created: 0 }
+  - { key: ep22, kind: episode, label: Errand run 22, accesses: [363], created: 0 }
+  - { key: ep23, kind: episode, label: Errand run 23, accesses: [363], created: 0 }
+  - { key: ep24, kind: episode, label: Errand run 24, accesses: [363], created: 0 }
+  - { key: ep25, kind: episode, label: Errand run 25, accesses: [363], created: 0 }
+  - { key: ep26, kind: episode, label: Errand run 26, accesses: [363], created: 0 }
+  - { key: ep27, kind: episode, label: Errand run 27, accesses: [363], created: 0 }
+  - { key: ep28, kind: episode, label: Errand run 28, accesses: [363], created: 0 }
+  - { key: ep29, kind: episode, label: Errand run 29, accesses: [363], created: 0 }
+  - { key: ep30, kind: episode, label: Errand run 30, accesses: [363], created: 0 }
+  - { key: ep31, kind: episode, label: Errand run 31, accesses: [363], created: 0 }
+  - { key: ep32, kind: episode, label: Errand run 32, accesses: [363], created: 0 }
+  - { key: ep33, kind: episode, label: Errand run 33, accesses: [363], created: 0 }
+  - { key: ep34, kind: episode, label: Errand run 34, accesses: [363], created: 0 }
+  - { key: ep35, kind: episode, label: Errand run 35, accesses: [363], created: 0 }
+  - { key: ep36, kind: episode, label: Errand run 36, accesses: [363], created: 0 }
+  - { key: ep37, kind: episode, label: Errand run 37, accesses: [363], created: 0 }
+  - { key: ep38, kind: episode, label: Errand run 38, accesses: [363], created: 0 }
+  - { key: ep39, kind: episode, label: Errand run 39, accesses: [363], created: 0 }
+  - { key: ep40, kind: episode, label: Errand run 40, accesses: [363], created: 0 }
+edges:
+  - { from: dinner, to: thursday, predicate: happened_on, strength: 0.5, lastUsed: 363 }
+  - { from: dinner, to: spaghetti, predicate: ate, strength: 0.001, lastUsed: 325 }
+  - { from: dinner, to: call, predicate: during, strength: 0.6, lastUsed: 363 }
+  - { from: call, to: todd, predicate: with, strength: 0.8, lastUsed: 363 }
+  - { from: call, to: italy, predicate: about, strength: 0.7, lastUsed: 363 }
+  - { from: ep01, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep02, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep03, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep04, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep05, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep06, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep07, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep08, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep09, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep10, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep11, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep12, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep13, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep14, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep15, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep16, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep17, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep18, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep19, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep20, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep21, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep22, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep23, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep24, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep25, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep26, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep27, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep28, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep29, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep30, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep31, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep32, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep33, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep34, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep35, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep36, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep37, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep38, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep39, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+  - { from: ep40, to: thursday, predicate: happened_on, strength: 1, lastUsed: 363 }
+steps:
+  - at: 365
+    recall: { cues: [thursday] }
+    expect:
+      associative_excludes: [dinner, spaghetti]
+      none_of: [spaghetti]

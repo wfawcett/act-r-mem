@@ -148,6 +148,8 @@ function makeConfig(url: string): Config {
     extractWindowChars: 6000,
     workerConcurrency: 2,
     allowRemoteModels: false,
+    prefetchTtlSeconds: 600,
+    contextMaxChars: 4000,
   };
 }
 
