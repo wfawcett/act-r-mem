@@ -8,9 +8,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:integration": "vitest run --no-file-parallelism test/db.integration.test.ts test/recall.integration.test.ts test/ingest.integration.test.ts"
+    "test:integration": "vitest run --no-file-parallelism test/db.integration.test.ts test/recall.integration.test.ts test/ingest.integration.test.ts test/mcp.integration.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@recall/activation": "workspace:*",
     "fastify": "^5.12.8",
     "pg": "^8.23.1",
