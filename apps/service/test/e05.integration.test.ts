@@ -146,6 +146,8 @@ function makeConfig(url: string): Config {
     embedDim: DIM,
     extractModel: 'claude-3-haiku',
     allowRemoteModels: false,
+    prefetchTtlSeconds: 600,
+    contextMaxChars: 4000,
   };
 }
 
