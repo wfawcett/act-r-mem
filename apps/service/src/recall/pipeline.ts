@@ -58,7 +58,8 @@ async function loadNodeRows(
     `SELECT ${NODE_COLS} FROM nodes WHERE tenant_id = $1 AND id = ANY($2) AND invalid_at IS NULL`,
     [tenant, ids],
   );
-  return res.rows as NodeRow[];
+  // pg returns bigint ids as strings; the graph maps are keyed by number.
+  return (res.rows as NodeRow[]).map((r) => ({ ...r, id: Number(r.id) }));
 }
 
 // Resolve one explicit label cue: by label_norm first, then aliases @>.
@@ -79,7 +80,7 @@ async function resolveLabelCue(
     `SELECT id FROM nodes
      WHERE tenant_id = $1 AND aliases @> $2 AND invalid_at IS NULL
      ORDER BY (kind = 'entity') DESC, id LIMIT 1`,
-    [tenant, JSON.stringify([label.trim()])],
+    [tenant, [label.trim()]],
   );
   if (byAlias.rows.length > 0) return Number(byAlias.rows[0].id);
   return undefined;
