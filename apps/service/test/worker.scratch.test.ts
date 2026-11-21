@@ -5,11 +5,14 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { afterAll, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
-import { pool } from '../src/db/pool.js';
-import { startWorker } from '../src/ingest/worker.js';
-import { enqueueRemember } from '../src/ingest/enqueue.js';
-import { loadConfig, setEffectiveParams } from '../src/config.js';
 import { startStub } from './stub-litellm.js';
+
+process.env.DATABASE_URL = 'postgres://recall:recall@127.0.0.1:5433/recall_test';
+// pool.ts reads DATABASE_URL at import time — import src modules after setting it.
+const { pool } = await import('../src/db/pool.js');
+const { startWorker } = await import('../src/ingest/worker.js');
+const { enqueueRemember } = await import('../src/ingest/enqueue.js');
+const { loadConfig, setEffectiveParams } = await import('../src/config.js');
 
 const MIGRATE = path.resolve(process.cwd(), '..', '..', 'db', 'migrate.mjs');
 
@@ -24,7 +27,6 @@ const stub = await startStub(768);
 const queueExtract = (content: unknown) =>
   stub.state.responses.push(JSON.stringify({ choices: [{ message: { content: JSON.stringify(content) } }] }));
 
-process.env.DATABASE_URL = 'postgres://recall:recall@127.0.0.1:5433/recall_test';
 execFileSync('node', [MIGRATE], { encoding: 'utf8' });
 
 process.chdir('../..'); // loadConfig reads config/params.json from cwd
