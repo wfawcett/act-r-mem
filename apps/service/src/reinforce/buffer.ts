@@ -1,7 +1,6 @@
 import type { Pool } from 'pg';
 import type { Params } from "../config.js";
-// flushUses lands with the flush transaction (task 3); loaded lazily so the buffer
-// module alone typechecks/runs.
+import { flushUses } from './flush.js';
 // E08: buffered "use" records flushed in batches (every useFlushMs or SIZE_THRESHOLD ids,
 // whichever first) into one reinforcement transaction (FR-19/NFR-06).
 export interface UseInput {
@@ -49,7 +48,7 @@ export class UseBuffer {
     this.useFlushMs = opts.useFlushMs;
     this.nowFn = opts.now ?? ((d: Date) => d.getTime());
     this.sizeThreshold = opts.sizeThreshold ?? DEFAULT_SIZE_THRESHOLD;
-    this.applyFn = opts.apply ?? ((...a) => import('./flush.js').then((m) => m.flushUses(...a)));
+    this.applyFn = opts.apply ?? flushUses;
   }
 
   /** Buffer a use. Dedupes on (traceId, nodeId) within the pending set; flushes at the size threshold. */
