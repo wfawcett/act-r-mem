@@ -47,6 +47,7 @@ export interface Config {
   embedDim: number;
   extractModel: string;
   allowRemoteModels: boolean;
+  useFlushMs: number;
 }
 
 export class ConfigError extends Error {
@@ -191,6 +192,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     embedDim: readInt(env, 'EMBED_DIM', DEFAULTS.embedDim),
     extractModel: env.EXTRACT_MODEL as string,
     allowRemoteModels,
+    useFlushMs: readInt(env, 'USE_FLUSH_MS', DEFAULTS.useFlushMs),
   };
 }
 
