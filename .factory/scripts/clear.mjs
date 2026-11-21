@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // clear.mjs <issue> --solution <text> [--label BLOCKED|REVIEW] [--config <path>]
 // Removes the label and writes one comment with the solution.
+import fs from "node:fs";
+import path from "node:path";
 import { checkLabel, gh, issueState, loadConfig, parseArgs, run, stamp, UsageError } from "./lib/common.mjs";
 
 run(() => {
@@ -13,6 +15,18 @@ run(() => {
   const mine = `factory: cleared ${label}`;
   const last = firstLines.filter((l) => l === mine || l === `factory: ${label}`).at(-1);
   if (labels.includes(label)) gh(["issue", "edit", a.issue, "--repo", board.repo, "--remove-label", label]);
+  // Reset the stage attempt counters so the next run-phase starts clean; stale
+  // attempts/last-reason files made every clear require a manual rm.
+  const repoRoot = path.resolve(HERE, "..", "..");
+  const perIssue = path.join(repoRoot, ".tmp", "factory-worktrees", String(a.issue), ".tmp", "factory", String(a.issue));
+  if (fs.existsSync(perIssue)) {
+    for (const stageDir of fs.readdirSync(perIssue)) {
+      for (const f of ["attempts", "last-reason"]) {
+        const p = path.join(perIssue, stageDir, f);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+    }
+  }
   if (last === mine && !labels.includes(label)) {
     console.log(`#${a.issue} is already cleared of ${label}. No new comment.`);
     return;

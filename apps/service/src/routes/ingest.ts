@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from '../config.js';
 import { TranscriptRequestSchema, enqueueTranscript } from '../ingest/enqueue.js';
 import { attachUseBuffer } from '../reinforce/index.js';
+import { registerMcp } from '../mcp/register.js';
 import { pool } from '../db/pool.js';
 
 export interface BuildAppOptions {
@@ -34,6 +35,11 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     const { queued_id } = await enqueueTranscript(parsed.data);
     return reply.status(200).send({ queued_id });
   });
+
+  // E09: mount the MCP Streamable HTTP transport at POST /mcp. E10 hook
+  // routes (/api/recall/prefetch, /api/mark-used, /api/sessions/end) stay out
+  // of buildApp — they belong to the card #19 hook app.
+  await registerMcp(app, { config: opts.config });
 
   return app;
 }
