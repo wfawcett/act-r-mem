@@ -168,16 +168,34 @@ function checkMerges(config, configPath, list) {
 }
 
 // <repo root>/.tmp/factory-worktrees/<n> on branch factory/<n>, made once and reused.
+// Existing worktrees are synced to origin/main before each card starts: cards
+// branch in frontier order, so without this every card N carries the whole
+// diff against the main that existed when its branch was created, and the PR
+// conflicts with everything merged since (observed every single card).
 function ensureWorktree(configPath, n) {
   const root = git(path.dirname(configPath), ["rev-parse", "--show-toplevel"]);
   const wt = path.join(root, ".tmp", "factory-worktrees", String(n));
-  if (fs.existsSync(wt)) return wt;
-  git(root, ["fetch", "origin"]);
-  git(root, ["worktree", "prune"]);
-  const branch = `factory/${n}`;
-  const exists = spawnSync("git", ["-C", root, "show-ref", "--verify", "--quiet", `refs/heads/${branch}`]).status === 0;
-  if (exists) git(root, ["worktree", "add", wt, branch]);
-  else git(root, ["worktree", "add", "-b", branch, wt, git(root, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"])]);
+  if (!fs.existsSync(wt)) {
+    git(root, ["fetch", "origin"]);
+    git(root, ["worktree", "prune"]);
+    const branch = `factory/${n}`;
+    const exists = spawnSync("git", ["-C", root, "show-ref", "--verify", "--quiet", `refs/heads/${branch}`]).status === 0;
+    if (exists) git(root, ["worktree", "add", wt, branch]);
+    else git(root, ["worktree", "add", "-b", branch, wt, git(root, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"])]);
+  }
+  // Fast-forward the worktree's branch to origin/main; if that is impossible
+  // (branch has its own commits), merge origin/main instead. Never fail the
+  // stage over this: a conflict leaves the branch as-is for the worker.
+  git(wt, ["fetch", "origin", "main"]);
+  const base = git(wt, ["merge-base", "HEAD", "origin/main"]);
+  if (base === git(wt, ["rev-parse", "origin/main"])) {
+    git(wt, ["merge", "--ff-only", "origin/main"]);
+  } else if (spawnSync("git", ["-C", wt, "merge", "--no-edit", "origin/main"]).status !== 0) {
+    try {
+      git(wt, ["merge", "--abort"]);
+    } catch { /* nothing to abort */ }
+    console.error(`factory: could not sync factory/${n} with origin/main; continuing on the branch as-is`);
+  }
   return wt;
 }
 
