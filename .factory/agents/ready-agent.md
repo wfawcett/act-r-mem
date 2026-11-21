@@ -14,6 +14,7 @@ $ASSIGNMENT
 
 <contract>
 - Read the spec file for this card under `specs/` given in the assignment. If none exists, write the result file with `{"status":"blocked","need":"no spec file"}` and stop.
+- Write the result file with exactly `{"status":"done"}` on success, `{"status":"blocked","need":"<reason>"}` to hand back, `{"status":"failed","need":"<reason>"}` on failure. Only those three values — never synonyms; the runner rejects them.
 - Produce a short implementation plan as the plan path given in the assignment:
   1. **Task list** - ordered, each item one sentence with the file(s) it touches.
   2. **Types and interfaces** - the exact TypeScript signatures the new code exposes.
