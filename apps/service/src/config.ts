@@ -46,6 +46,8 @@ export interface Config {
   embedModel: string;
   embedDim: number;
   extractModel: string;
+  extractWindowChars: number;
+  workerConcurrency: number;
   allowRemoteModels: boolean;
 }
 
@@ -190,6 +192,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     embedModel: env.EMBED_MODEL as string,
     embedDim: readInt(env, 'EMBED_DIM', DEFAULTS.embedDim),
     extractModel: env.EXTRACT_MODEL as string,
+    extractWindowChars: readInt(env, 'EXTRACT_WINDOW_CHARS', DEFAULTS.extractWindowChars),
+    workerConcurrency: readInt(env, 'WORKER_CONCURRENCY', DEFAULTS.workerConcurrency),
     allowRemoteModels,
   };
 }
