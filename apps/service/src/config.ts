@@ -47,6 +47,8 @@ export interface Config {
   embedDim: number;
   extractModel: string;
   allowRemoteModels: boolean;
+  prefetchTtlSeconds: number;
+  contextMaxChars: number;
 }
 
 export class ConfigError extends Error {
@@ -191,6 +193,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     embedDim: readInt(env, 'EMBED_DIM', DEFAULTS.embedDim),
     extractModel: env.EXTRACT_MODEL as string,
     allowRemoteModels,
+    prefetchTtlSeconds: readInt(env, 'PREFETCH_TTL_SECONDS', 600),
+    contextMaxChars: readInt(env, 'CONTEXT_MAX_CHARS', 4000),
   };
 }
 
