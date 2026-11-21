@@ -295,6 +295,12 @@ export class MemoryStore {
     return n.kind;
   }
 
+  nodeKey(id: number): string {
+    const n = this.nodes.get(id);
+    if (!n) throw new Error(`unknown node id: ${id}`);
+    return n.key;
+  }
+
   nodeLabel(id: number): string {
     const n = this.nodes.get(id);
     if (!n) throw new Error(`unknown node id: ${id}`);

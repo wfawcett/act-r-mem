@@ -121,6 +121,8 @@ export const RecallActionSchema = z
     { message: 'recall step needs cues or query' },
   );
 
+export type RecallAction = z.infer<typeof RecallActionSchema>;
+
 export const StepSchema = z
   .object({
     at: z.number().nonnegative(),
