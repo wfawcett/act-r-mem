@@ -10,8 +10,9 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import type { PoolClient } from 'pg';
 
 // Worker polls on a 1 s interval and the kill test boots child processes
-// (build + two full entrypoint boots); the default is far too tight here.
-vi.setConfig({ testTimeout: 60000 });
+// (build + two full entrypoint boots) and waits up to 60s for the restart to
+// drain; the default is far too tight here.
+vi.setConfig({ testTimeout: 120000 });
 
 import type { WorkerHandle } from '../src/ingest/worker.js';
 import { startStub } from './stub-litellm.js';
@@ -588,10 +589,12 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
 
       child2 = spawnChild();
       await waitForUp(child2);
+      // Restart requeues the killed item and completes it; on a loaded box the
+      // migrate + boot + drain chain has taken 40s+. 60s removes the flake.
       await waitFor(async () => {
         const [a, b] = await Promise.all([queueRow(killed.queued_id), queueRow(empty.queued_id)]);
         return a?.status === 'done' && b?.status === 'done';
-      }, 30000);
+      }, 60000);
       expect(await countNodes('entity')).toBe(1);
       child2.kill('SIGTERM');
       expect(await exitOf(child2)).toBe(0);

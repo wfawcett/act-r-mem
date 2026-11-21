@@ -22,6 +22,7 @@ const VALUES = {
 
 const DbIntegration = process.env.DATABASE_URL ? describe : describe.skip;
 DbIntegration('db integration', () => {
+  // DROP + migrate can exceed the 10s default hook timeout on a loaded box.
   beforeAll(async () => {
     // Hermetic reset: drop all app objects + the migration bookkeeping, so the
     // assertions below hold no matter what ran against this database before.
@@ -32,7 +33,7 @@ DbIntegration('db integration', () => {
     `);
     expect(await migrate()).toContain('applied 0001_init.sql');
     expect(await migrate()).toContain('no migrations to apply');
-  });
+  }, 30000);
 
   afterAll(async () => {
     await pool.end();
