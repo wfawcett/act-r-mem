@@ -4,12 +4,9 @@
 // verbatim (§8.6); any other throw is logged with the request id and answered
 // with "Memory is unavailable right now" so the client session continues.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { RememberInputSchema, type RememberInput } from '../ingest/enqueue.js';
+import { z } from 'zod';
+import { type RememberInput } from '../ingest/enqueue.js';
 import {
-  ForgetToolSchema,
-  GetMemoryToolSchema,
-  MarkUsedToolSchema,
-  RecallToolSchema,
   ToolValidationError,
   forgetTool,
   getMemoryTool,
@@ -23,6 +20,10 @@ import {
 
 const SERVER_NAME = 'recall';
 const SERVER_VERSION = '0.1.0';
+
+// Permissive tool input schema: advertises an object shape without
+// pre-validating (see createMcpServer) so handler-level §8.6 messages win.
+const PASS_THROUGH = z.object({}).passthrough();
 
 const UNAVAILABLE = 'Memory is unavailable right now';
 
@@ -74,12 +75,14 @@ function withClientOverride(input: Record<string, unknown>, clientName?: string)
 export function createMcpServer(deps: McpToolDeps, requestId: string, clientName?: string): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
+  // Tools are registered with a permissive passthrough schema: the SDK
+  // pre-validates registered shapes and answers invalid calls with a JSON-RPC
+  // -32602 error, which would replace the §8.6 short messages. Validation
+  // therefore happens in the handlers below (zod schemas in tools.ts), whose
+  // ToolValidationError messages reach the model verbatim.
   server.registerTool(
     'remember',
-    {
-      description: DESCRIPTIONS.remember,
-      inputSchema: RememberInputSchema.shape,
-    },
+    { description: DESCRIPTIONS.remember, inputSchema: PASS_THROUGH },
     async (args) => {
       try {
         const input = (
@@ -98,7 +101,7 @@ export function createMcpServer(deps: McpToolDeps, requestId: string, clientName
     'recall',
     {
       description: DESCRIPTIONS.recall,
-      inputSchema: RecallToolSchema.shape,
+      inputSchema: PASS_THROUGH,
     },
     async (args) => {
       try {
@@ -114,7 +117,7 @@ export function createMcpServer(deps: McpToolDeps, requestId: string, clientName
     'mark_used',
     {
       description: DESCRIPTIONS.mark_used,
-      inputSchema: MarkUsedToolSchema.shape,
+      inputSchema: PASS_THROUGH,
     },
     async (args) => {
       try {
@@ -129,11 +132,11 @@ export function createMcpServer(deps: McpToolDeps, requestId: string, clientName
     'get_memory',
     {
       description: DESCRIPTIONS.get_memory,
-      inputSchema: GetMemoryToolSchema.shape,
+      inputSchema: PASS_THROUGH,
     },
     async (args) => {
       try {
-        return ok(await getMemoryTool(deps, args));
+        return ok(await getMemoryTool(deps, args as { id: number }));
       } catch (err) {
         return errorResult(requestId, err);
       }
@@ -144,7 +147,7 @@ export function createMcpServer(deps: McpToolDeps, requestId: string, clientName
     'forget',
     {
       description: DESCRIPTIONS.forget,
-      inputSchema: ForgetToolSchema.shape,
+      inputSchema: PASS_THROUGH,
     },
     async (args) => {
       try {

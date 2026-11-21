@@ -65,21 +65,35 @@ export async function registerMcp(app: FastifyInstance, deps: McpRegisterDeps): 
         log: request.log,
       };
       bindLogError(request.log);
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        // The initialize response is an SSE stream that stays open, so
+        // awaiting handleRequest would never return before the next request.
+        // Register the session the moment the transport assigns its id.
+        onsessioninitialized: (id) => {
+          sessions.set(id, { transport });
+        },
+      });
       const server = createMcpServer(toolDeps, requestId, clientName);
       transport.onclose = () => {
         const id = transport.sessionId;
         if (id !== undefined) sessions.delete(id);
       };
       await server.connect(transport);
-      entry = { transport };
-      if (transport.sessionId !== undefined) sessions.set(transport.sessionId, entry);
-    }
 
-    // The transport writes the HTTP response itself (JSON or SSE stream), so
-    // Fastify must not touch the reply afterwards.
-    reply.hijack();
-    await entry.transport.handleRequest(request.raw, reply.raw, body);
+      // The transport writes the HTTP response itself (JSON or SSE stream), so
+      // Fastify must not touch the reply afterwards; the promise resolves only
+      // when the stream closes, so it is not awaited here.
+      reply.hijack();
+      void transport.handleRequest(request.raw, reply.raw, body).catch((err) => {
+        request.log.error({ err }, '[mcp] transport.handleRequest failed');
+      });
+    } else {
+      // The transport writes the HTTP response itself (JSON or SSE stream), so
+      // Fastify must not touch the reply afterwards.
+      reply.hijack();
+      await entry.transport.handleRequest(request.raw, reply.raw, body);
+    }
   });
 
   app.addHook('onClose', async () => {

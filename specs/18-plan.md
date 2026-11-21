@@ -16,6 +16,7 @@ DONE: Create `apps/service/src/mcp/server.ts` — factory `createMcpServer(deps,
 5. Wire it in `apps/service/src/routes/ingest.ts` (`buildApp`) — call `registerMcp(app, { config: opts.config })` after the existing routes; keep E10 hook routes out.
 DONE: Wire it in `apps/service/src/routes/ingest.ts` (`buildApp`) — call `registerMcp(app, { config: opts.config })` after the existing routes; keep E10 hook routes out.
 6. Add `apps/service/test/mcp.integration.test.ts` — SDK `Client` + `StreamableHTTPClientTransport` against the compose test Postgres (migrations via `db/migrate.mjs`, same pattern as `recall.integration.test.ts`): list tools (exact §8 descriptions), drive all five tools, the error paths (empty text, unknown id get/forget, oversized ids > 50), the internal-error message, and the transport-client-name override.
+   DONE: Add `apps/service/test/mcp.integration.test.ts` — SDK Client over StreamableHTTPClientTransport against the compose test Postgres: exact §8 descriptions, all five tools, §8.6 error paths, internal-error message, client-name override.
 7. Add the new test file to the `test:integration` script in `apps/service/package.json`.
 
 ## 2. Types and interfaces

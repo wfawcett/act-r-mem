@@ -96,7 +96,7 @@ function firstIssue(err: z.ZodError): string {
 export async function rememberTool(deps: McpToolDeps, input: RememberInput): Promise<{ queued_id: number }> {
   const parsed = RememberInputSchema.safeParse(input);
   if (!parsed.success) {
-    if (parsed.error.issues.some((i) => i.path[0] === 'text' && i.message === 'Too small: expected string to have >=1 characters')) {
+    if (parsed.error.issues.some((i) => i.path[0] === 'text' && i.code === 'too_small')) {
       throw new ToolValidationError('text is empty');
     }
     throw new ToolValidationError(firstIssue(parsed.error));
@@ -108,7 +108,7 @@ export async function rememberTool(deps: McpToolDeps, input: RememberInput): Pro
 export async function recallTool(deps: McpToolDeps, input: RecallToolInput): Promise<RecallResult> {
   const parsed = RecallToolSchema.safeParse(input);
   if (!parsed.success) {
-    if (parsed.error.issues.some((i) => i.path[0] === 'query' && i.message === 'Too small: expected string to have >=1 characters')) {
+    if (parsed.error.issues.some((i) => i.path[0] === 'query' && i.code === 'too_small')) {
       throw new ToolValidationError('query is empty');
     }
     throw new ToolValidationError(firstIssue(parsed.error));
@@ -138,7 +138,8 @@ export async function recallTool(deps: McpToolDeps, input: RecallToolInput): Pro
       },
     );
     await client.query('COMMIT');
-    return result;
+    // §8.2: trace_id is a number; pg returns bigint ids as strings.
+    return result.trace_id === undefined ? result : { ...result, trace_id: Number(result.trace_id) };
   } catch (err) {
     try {
       await client.query('ROLLBACK');
@@ -236,7 +237,7 @@ export async function getMemoryTool(
     label: string;
     kind: 'entity' | 'fact' | 'episode';
   }[]).map((e) => ({
-    id: Number(e.id),
+    id: Number(e.other), // the connected node's id (PRD §8.4), not the edge id
     label: e.label,
     kind: e.kind,
     predicate: e.predicate,
