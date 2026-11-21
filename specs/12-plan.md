@@ -27,6 +27,8 @@ Spec: `specs/12-e03-replay-harness-and-scenario-suite.md`. Existing code: `packa
 11. Write `packages/replay/test/replay.test.ts` — glob every `scenarios/*.yaml`, assert SC-01..SC-15 present exactly once, run each, write `out/traces/<scenario>/<step>.json`, assert pass and `expanded <= maxExpanded`.
   DONE: Write packages/replay/test/replay.test.ts (glob scenarios/*.yaml, SC-01..SC-15 exactly once, run each with sc-15-seed fixture, write out/traces/<scenario>/<step>.json, assert pass and expanded <= maxExpanded; state-only scenarios SC-05/06/13 yield zero traces)
 12. Write `packages/replay/test/determinism.test.ts` — run the suite twice into two temp dirs, assert byte-identical files.
+   DONE: Write packages/replay/test/determinism.test.ts — run the suite twice into two temp dirs, assert byte-identical trace files
+
 
 ## 2. Types and interfaces
 
