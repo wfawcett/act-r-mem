@@ -2,9 +2,8 @@
 // clock, stub embedder (declared similarities instead of vectors), and the
 // recall pipeline steps 4–8 in memory. No randomness, no Date.now().
 //
-// NOTE: trace serialization and expectation evaluation currently live here and
-// are lifted into `trace.ts` (task 7) and `expect.ts` (task 8) as those modules
-// land; the shapes below are the stable contracts those tasks consume.
+// NOTE: expectation evaluation still lives here and is lifted into `expect.ts`
+// (task 8); the shapes below are the stable contracts that task consumes.
 import {
   baseLevel,
   isDormantNode,
@@ -21,6 +20,7 @@ import {
 import type { EdgeState } from '@recall/activation';
 import type { Expectations, RecallAction, RememberInput, Scenario, ScenarioEdge, ScenarioNode } from './types.js';
 import { defaultParams, mergeParams } from './params.js';
+import { serializeTrace, type TraceRecord } from './trace.js';
 import { MemoryStore } from './store.js';
 
 const DAY = 86_400_000;
@@ -77,26 +77,15 @@ export interface RecallOutcome {
   /** Distinct nodes pulled into the neighborhood (cap: params.maxExpanded). */
   expanded: number;
   durationMs: number;
-}
-
-// --- §7 recall_trace record (trace.ts owns this from task 7) ---------------------
-
-export interface TraceRecord {
+  // recall_trace header fields (§7), taken from the recall action verbatim.
   tenant_id: string;
   session_id: string;
   client: string;
-  /** Simulated wall time (epoch ms) from the injected clock. */
-  at: number;
   query: string;
-  cue_ids: number[];
-  cue_weights: number[];
-  hops: { hop: number; from: number; to: number; edge: number; amount: number }[];
-  recalled: { id: number; lane: string; A: number; B: number; S: number }[];
-  used_ids: number[];
-  params: Params;
-  duration_ms: number;
-  expanded: number;
 }
+
+// §7 recall_trace record lives in trace.ts (task 7).
+export type { TraceRecord } from './trace.js';
 
 // --- Failures / result ------------------------------------------------------------
 
@@ -123,8 +112,6 @@ export interface RunOptions {
   /** Fixture hook for `setup:` scenarios (SC-15); resolved by the runner. */
   setup?: (name: string) => SetupFixture;
 }
-
-const PRUNE_AMOUNT = 0.004; // §10.5 step 9: keep flows with amount >= 0.004 in traces
 
 export function runScenario(scenario: Scenario, opts: RunOptions = {}): ScenarioResult {
   const failures: ScenarioFailure[] = [];
@@ -158,7 +145,7 @@ export function runScenario(scenario: Scenario, opts: RunOptions = {}): Scenario
 
       if (step.recall) {
         const outcome = runRecall(store, params, now, step.recall);
-        const trace = buildTrace(outcome, clock, params, step.recall);
+        const trace = serializeTrace(outcome, clock, params);
         traces.push(trace);
         lastRecall = { trace, flows: outcome.flows };
       }
@@ -477,6 +464,10 @@ function runRecall(store: MemoryStore, p: Params, now: number, action: RecallAct
     usedIds: [],
     expanded,
     durationMs: durationMs(flows),
+    tenant_id: 'local',
+    session_id: action.session_id ?? 'replay',
+    client: action.client ?? 'omp',
+    query: action.query ?? '',
   };
 }
 
@@ -487,24 +478,4 @@ function durationMs(flows: Flow[]): number {
   return 8 + 4 * maxHop;
 }
 
-// --- Trace assembly (trace.ts owns this from task 7) ------------------------------------
-
-function buildTrace(outcome: RecallOutcome, clock: InjectedClock, p: Params, action: RecallAction): TraceRecord {
-  return {
-    tenant_id: 'local',
-    session_id: action.session_id ?? 'replay',
-    client: action.client ?? 'omp',
-    at: clock.nowMs(),
-    query: action.query ?? '',
-    cue_ids: outcome.cues.map((c) => c.id),
-    cue_weights: outcome.cues.map((c) => c.activation),
-    hops: outcome.flows
-      .filter((f) => f.amount >= PRUNE_AMOUNT)
-      .map((f) => ({ hop: f.hop, from: f.from, to: f.to, edge: f.edge, amount: f.amount })),
-    recalled: outcome.recalled.map((r) => ({ id: r.id, lane: r.lane, A: r.A, B: r.B, S: r.S })),
-    used_ids: [],
-    params: p,
-    duration_ms: outcome.durationMs,
-    expanded: outcome.expanded,
-  };
-}
+// --- Trace assembly lives in trace.ts (task 7); runner consumes serializeTrace.
