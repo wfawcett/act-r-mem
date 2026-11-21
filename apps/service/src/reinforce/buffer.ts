@@ -24,7 +24,7 @@ export interface UseBufferOptions {
     params: Params,
     uses: readonly UseInput[],
     now: number,
-  ) => Promise<void>;
+  ) => Promise<unknown>;
 }
 
 const DEFAULT_SIZE_THRESHOLD = 200;
@@ -75,7 +75,9 @@ export class UseBuffer {
     if (!batch.size) return Promise.resolve();
     const now = this.nowFn(new Date());
     this.flushing = batch;
-    this.inflight = this.applyFn(this.pool, this.params, [...batch.values()], now).finally(() => {
+    this.inflight = this.applyFn(this.pool, this.params, [...batch.values()], now).then(
+      () => undefined,
+    ).finally(() => {
       this.flushing = new Map();
       this.inflight = undefined;
     });
