@@ -1,0 +1,21 @@
+# E08 — Reinforcement buffer and use semantics (card #17)
+
+## Goal
+When done, every "use" of a node (recall trace usage, `get_memory` by id) is buffered in memory and flushed in batches (every `USE_FLUSH_MS`=5000ms or 200 ids, whichever first, plus on SIGTERM/shutdown) in one transaction that applies `recordAccess` with the dormant-revival bonus (FR-20), reinforces edges along the trace's path via `pathEdges`+`reinforceEdge` (FR-21), treats `get_memory` as an access without edge reinforcement (FR-22), dedupes `(trace_id, node_id)` within a flush, appends node ids to `recall_trace.used_ids`, and `forget`/`restore` flip `invalid_at` on a node and its edges (FR-24).
+
+## Approach
+Files to create or change (all under `apps/service/src/reinforce/` unless noted; `@recall/activation` already exports `recordAccess`, `reinforceEdge`, `pathEdges`, `isDormantNode`):
+- `apps/service/src/reinforce/buffer.ts` — `class UseBuffer` with `add(use: { nodeId: number; traceId?: number })` (dedupes on `(traceId, nodeId)` per pending set), size threshold 200, `size()`, `flush(): Promise<void>` (swap-and-empty, then apply), and `startTimer(ms)` / `stop()` for the interval. Construction takes `{ pool, params, now }` — `now` injectable so tests don't sleep (PRD §2.3: math takes `now`, no `Date.now()` in the package; the buffer may use `Date.now()`).
+- `apps/service/src/reinforce/flush.ts` — `flushUses(pool, params, uses)`: one transaction (via `db/pool.ts` client, `SET LOCAL app.tenant_id` per §5 tenant GUC if present in E04's helper): load the nodes (`access_count`, `recent_access`, `created_at`) and edges of the pending set; for each node compute `wasDormant = isDormantNode(baseLevel(...), params)` from current state, apply `recordAccess`, `UPDATE nodes SET access_count, recent_access`; for each distinct `traceId` load its `recall_trace.flows`, compute `pathEdges(flows, nodeId)`, apply `reinforceEdge` once per edge per flush (even across multiple nodes on the same trace), `UPDATE edges SET strength, last_used_at`; `UPDATE recall_trace SET used_ids = used_ids || $ids`. Read-only tests may assert via returned row counts.
+- `apps/service/src/reinforce/forget.ts` — `forgetNode(pool, id)`: `UPDATE nodes SET invalid_at = now() WHERE id=$1` and `UPDATE edges SET invalid_at = now() WHERE (src=$1 OR dst=$1) AND invalid_at IS NULL`; `restoreNode(pool, id)` clears `invalid_at` on the node and its edges (FR-24; the `POST /api/nodes/:id/restore` route itself is E10).
+- Wire-up in the service entrypoint: instantiate the buffer, register `process.on('SIGTERM')`/`beforeShutdown` to `await flush()` before exit (FR-19/NFR-06); export the buffer from the app instance so routes/worker (E09/E10) can call `buffer.add`. Note FR-23 (implicit use from transcripts) is a producer of `buffer.add` and lands with E07 wiring — here only the buffer/flush side ships.
+- `apps/service/test/reinforce.integration.test.ts` — vitest, test profile DB (pattern of `test/db.integration.test.ts`): seed a node + trace with flows via SQL; inject `now` and a zero-interval timer.
+
+## Verification
+```
+pnpm --filter @recall/service test
+```
+Proving output: vitest passes — (a) a buffered use flushes (manual `flush()` or threshold=200) and `nodes.access_count`/`recent_access` grew, with `+reviveExtraAccesses` when the node was dormant and without when not; (b) path edges from a trace get `strength` increased and `last_used_at` set, exactly once per edge per flush even with duplicate `(trace_id, node_id)`; (c) a `get_memory`-style use (no traceId) bumps the node but not any edge; (d) all `used_ids` appended to `recall_trace`; (e) `forgetNode` sets `invalid_at` on node+edges and `restoreNode` clears them; (f) SIGTERM test: start a child process (or the vitest fixture app) with a pending buffer, send SIGTERM, assert rows appear and the process exits — proving the shutdown flush; (g) a use never flushed is still pending, matching "a crash loses at most `USE_FLUSH_MS` of uses" (SC-09/SC-10 hold through the service path).
+
+## Out of scope
+Which ids get used (producers: MCP `get_memory`/hook routes and implicit-use detection — E09/E10, FR-23's transcript wiring); the `POST /api/nodes/:id/forget|restore` HTTP route wiring (E10); the replay suite's mathematical SC-09/SC-10 checks (already covered in `scenarios/`); the pg backend swap (FR-52/P3).

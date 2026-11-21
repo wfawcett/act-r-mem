@@ -6,6 +6,8 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from '../config.js';
 import { TranscriptRequestSchema, enqueueTranscript } from '../ingest/enqueue.js';
+import { attachUseBuffer } from '../reinforce/index.js';
+import { pool } from '../db/pool.js';
 
 export interface BuildAppOptions {
   config: Config;
@@ -13,6 +15,14 @@ export interface BuildAppOptions {
 
 export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
+
+  // One UseBuffer per app instance (§16.4): batches use events, flushes on the
+  // interval/threshold and on SIGTERM (FR-19/NFR-06). Routes (E09/E10) call
+  // app.useBuffer.add.
+  const useBuffer = attachUseBuffer(app, { pool, params: opts.config.params, useFlushMs: opts.config.useFlushMs });
+  app.addHook('onClose', async () => {
+    await useBuffer.flush();
+  });
 
   app.get('/healthz', async () => ({ ok: true }));
 
