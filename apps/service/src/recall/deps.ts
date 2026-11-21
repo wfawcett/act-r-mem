@@ -7,6 +7,7 @@ export interface RecallDeps {
   embed(text: string): Promise<number[]>;
   db: PoolClient; // transaction-capable executor; tests inject a live client
   params: Params; // config snapshot used for spread/score and the trace row
+  contextMaxChars?: number; // §16.3 CONTEXT_MAX_CHARS; default 4000
 }
 
 export interface RecallInput {
