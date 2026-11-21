@@ -6,6 +6,8 @@ export interface StubHandle {
     embeddings: number[];
     chatLog: any[];
     responses: string[];
+    /** Artificial per-request delay (ms) for /chat/completions, for tests that need to catch a worker mid-processing. */
+    delayMs: number;
   };
   close(): Promise<void>;
 }
@@ -17,6 +19,7 @@ export async function startStub(dim: number): Promise<StubHandle> {
     embeddings: new Array<number>(dim).fill(0.5),
     chatLog: [] as any[],
     responses: [] as string[],
+    delayMs: 0,
   };
   const server = createServer(async (req, res) => {
     const { method, url, headers } = req;
@@ -35,6 +38,7 @@ export async function startStub(dim: number): Promise<StubHandle> {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ data: [{ embedding: vector }] }));
       } else if (path.endsWith('/chat/completions')) {
+        if (state.delayMs > 0) await new Promise((r) => setTimeout(r, state.delayMs));
         if (parsed?.messages && parsed.messages.length > 0) {
           if (state.responses.length > 0) {
             const queued = state.responses.shift()!;

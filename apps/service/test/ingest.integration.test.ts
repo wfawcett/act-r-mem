@@ -539,6 +539,11 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
     // run; kill both children no matter how the test fails or times out.
     let child: ReturnType<typeof spawn>;
     let child2: ReturnType<typeof spawn>;
+    // The killed item's extract call is delayed so the item is reliably
+    // observed mid-processing (a fast pipeline could finish before the first
+    // DB poll and never be seen as 'processing').
+    stub.state.delayMs = 1200;
+    child = spawnChild();
     try {
       // Enqueue, boot the child, and kill it hard mid-processing window.
       queueExtract({
@@ -587,6 +592,7 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
       child2.kill('SIGTERM');
       expect(await exitOf(child2)).toBe(0);
     } finally {
+      stub.state.delayMs = 0;
       if (child !== undefined && child.exitCode === null) child.kill('SIGKILL');
       if (child2 !== undefined && child2.exitCode === null) child2.kill('SIGKILL');
     }
