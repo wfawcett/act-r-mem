@@ -1,0 +1,24 @@
+# SC-01 — Convergent cues (PRD §15.2 example, §15.3 SC-01).
+# The §15.2 example uses negative day offsets; this schema requires nonnegative
+# offsets, so the epoch is shifted +365 days — every relative age is unchanged.
+name: sc-01-convergent-cues
+nodes:
+  - { key: todd, kind: entity, label: Todd, accesses: [363, 362.9, 356, 335], created: 115 }
+  - { key: italy, kind: entity, label: Italy, accesses: [363, 335, 304], created: 245 }
+  - { key: thursday, kind: entity, label: Thursday, accesses: [364, 363, 356, 349, 342, 335], created: 0 }
+  - { key: spaghetti, kind: entity, label: Spaghetti, accesses: [325, 270], created: 65 }
+  - { key: dinner, kind: episode, label: Thursday dinner, accesses: [363], created: 363 }
+  - { key: call, kind: episode, label: Call with Todd, accesses: [363], created: 363 }
+edges:
+  - { from: dinner, to: thursday, predicate: happened_on, strength: 0.5, lastUsed: 363 }
+  - { from: dinner, to: spaghetti, predicate: ate, strength: 0.001, lastUsed: 325 }
+  - { from: dinner, to: call, predicate: during, strength: 0.6, lastUsed: 363 }
+  - { from: call, to: todd, predicate: with, strength: 0.8, lastUsed: 363 }
+  - { from: call, to: italy, predicate: about, strength: 0.7, lastUsed: 363 }
+steps:
+  - at: 365
+    recall: { cues: [todd, italy, thursday] }
+    expect:
+      associative_includes: [call, dinner]
+      exposure_includes: [spaghetti]
+      associative_excludes: [spaghetti]

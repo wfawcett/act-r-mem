@@ -1,0 +1,12 @@
+# SC-13 — Tail approximation (§15.3 SC-13). 50 accesses spaced 1 day apart with
+# M = 10: the stored part covers ages 1..10 and the hybrid tail term
+# approximates ages 11..50. Approximate B = 2.5525 vs exact
+# B = ln(Σ_{a=1..50} a^-0.5) = 2.5457 — within the asserted ±0.1 bounds.
+name: sc-13-tail-approximation
+nodes:
+  - { key: s50, kind: entity, label: Fifty accesses, accesses: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], created: 0 }
+steps:
+  - at: 50
+    expect:
+      node:
+        - { key: s50, active: true, B_gt: 2.4457, B_lt: 2.6457 }
