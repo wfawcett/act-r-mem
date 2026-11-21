@@ -13,7 +13,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "eslint .",
-    "replay": "pnpm --filter @recall/replay test"
+    "replay": "pnpm --filter @recall/replay test",
+    "clean:sessions": "pkill -f 'apps/service/dist/index.js' || true; pkill -f 'node (vitest' || true"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

@@ -4,6 +4,7 @@
 // migrations, listening, worker start and SIGTERM shutdown all exercised.
 import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
+import net from 'node:net';
 import { afterAll, expect, it } from 'vitest';
 import { startStub } from './stub-litellm.js';
 
@@ -33,7 +34,9 @@ const config = loadConfig({
 setEffectiveParams(config.params);
 
 const app = await buildApp({ config });
-await app.listen({ port: 17449, host: '127.0.0.1' });
+// Port 0 = ephemeral: fixed ports (17449 etc.) collided with leftover services
+// from previous runs and produced EADDRINUSE flakes across the suite.
+await app.listen({ port: 0, host: '127.0.0.1' });
 
 async function countRows(): Promise<number> {
   const { rows } = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ingest_queue`);
@@ -74,6 +77,19 @@ it('GET /healthz responds ok', async () => {
   expect(res.statusCode).toBe(200);
 });
 
+// Reserve a free port for the child service, then release it: fixed child
+// ports collided with leftover processes across runs.
+const freePort = await (async () => {
+  const srv = net.createServer();
+  const { promise, resolve } = Promise.withResolvers<number>();
+  srv.listen(0, '127.0.0.1', () => {
+    const { port } = srv.address() as { port: number };
+    srv.close(() => resolve(port));
+  });
+  srv.on('error', () => resolve(0));
+  return promise;
+})();
+
 it('compiled entrypoint boots: migrate + listen + worker + SIGTERM stop', async () => {
   await pool.query(`TRUNCATE ingest_queue`);
   const child = spawn(process.execPath, ['apps/service/dist/index.js'], {
@@ -82,7 +98,7 @@ it('compiled entrypoint boots: migrate + listen + worker + SIGTERM stop', async 
       ...process.env,
       DATABASE_URL,
       BIND_ADDRESS: '127.0.0.1',
-      PORT: '17499',
+      PORT: String(freePort),
       UI_PASSWORD: 'x',
       SESSION_SECRET: 'x',
       LITELLM_BASE_URL: stub.url,
