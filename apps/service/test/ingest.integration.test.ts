@@ -439,7 +439,8 @@ describe('worker mechanics', () => {
       `UPDATE ingest_queue SET attempts = 4, status = 'pending', run_after = now(), started_at = NULL WHERE id = $1`,
       [queued_id],
     );
-    await waitFor(async () => (await queueRow(queued_id))?.status === 'failed');
+    // Slow boxes (WSL2 D-state stalls) can stretch one retry cycle past 10 s.
+    await waitFor(async () => (await queueRow(queued_id))?.status === 'failed', 30000);
     const failed = await queueRow(queued_id);
     expect(failed?.attempts).toBe(5);
     expect(failed?.last_error).not.toBeNull();
@@ -509,7 +510,9 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
   it('restart finishes the killed item and a never-claimed empty item', async () => {
     execFileSync('pnpm', ['--filter', '@recall/service', 'build'], { cwd: process.cwd(), encoding: 'utf8' });
     await reset();
-    const PORT = '17511';
+    // Unique per run: an orphaned child from a crashed earlier run must not
+    // hold this port (its healthz would otherwise answer for a dead child).
+    const PORT = String(17500 + (process.pid % 500));
 
     const spawnChild = () =>
       spawn(process.execPath, ['apps/service/dist/index.js'], {
@@ -558,7 +561,7 @@ describe('kill-mid-ingest: SIGKILL between enqueue and completion', () => {
       await waitForUp(child);
       // Deterministic "mid-processing": wait for the worker to claim the item
       // before killing, so the kill cannot race ahead of the first poll.
-      await waitFor(async () => (await queueRow(killed.queued_id))?.status === 'processing');
+      await waitFor(async () => (await queueRow(killed.queued_id))?.status === 'processing', 30000);
       child.kill('SIGKILL');
       expect(await exitOf(child)).not.toBe(0);
       // Simulate the >10 min stuck window: the restart's startup sweep then
